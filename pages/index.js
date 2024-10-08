@@ -201,25 +201,25 @@ export default function Home() {
           padding: 0 0.5rem;
           display: flex;
           flex-direction: column;
-          justify-content: center;
+          justify-content: flex-start; // 변경: center에서 flex-start로
           align-items: center;
         }
 
         main {
-          padding: 5rem 0;
+          padding: 1rem 0; // 변경: 5rem에서 1rem으로 줄임
           flex: 1;
           display: flex;
           flex-direction: column;
-          justify-content: center;
+          justify-content: flex-start; // 변경: center에서 flex-start로
           align-items: center;
           width: 100%;
           max-width: 1200px;
         }
 
         .title {
-          margin: 0 0 2rem;
+          margin: 0 0 1rem; // 변경: 2rem에서 1rem으로 줄임
           line-height: 1.15;
-          font-size: 3rem;
+          font-size: 2.5rem; // 변경: 3rem에서 2.5rem으로 줄임
           text-align: center;
         }
 
