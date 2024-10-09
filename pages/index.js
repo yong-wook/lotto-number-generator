@@ -107,9 +107,10 @@ export default function Home() {
                   ))}
                   <span
                     className="number bonus"
-                    style={{backgroundColor: getBackgroundColor(recentWinningNumbers.bnusNo)}}
+                    style={{backgroundColor: getBackgroundColor(recentWinningNumbers.bnusNo), border: '2px solid #ffcc00'}} // 변경: 보너스 번호에 테두리 추가
                   >
                     {recentWinningNumbers.bnusNo}
+                    <span style={{ fontSize: '0.6rem', marginLeft: '0.2rem', color: '#ffcc00' }}>bonus</span> {/* 변경: 보너스 텍스트 추가 */}
                   </span>
                 </div>
               )}
@@ -137,9 +138,10 @@ export default function Home() {
                       ))}
                       <span
                         className="number bonus"
-                        style={{backgroundColor: getBackgroundColor(draw.bnusNo)}}
+                        style={{backgroundColor: getBackgroundColor(draw.bnusNo), border: '2px solid #ffcc00'}} // 변경: 보너스 번호에 테두리 추가
                       >
                         {draw.bnusNo}
+                        <span style={{ fontSize: '0.6rem', marginLeft: '0.2rem', color: '#ffcc00' }}>bonus</span> {/* 변경: 보너스 텍스트 추가 */}
                       </span>
                     </div>
                   </div>
