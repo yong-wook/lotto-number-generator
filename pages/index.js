@@ -107,10 +107,10 @@ export default function Home() {
                   ))}
                   <span
                     className="number bonus"
-                    style={{backgroundColor: getBackgroundColor(recentWinningNumbers.bnusNo), border: '2px solid #ffcc00'}} // 변경: 보너스 번호에 테두리 추가
+                    style={{backgroundColor: getBackgroundColor(recentWinningNumbers.bnusNo), border: '2px solid #ffcc00', display: 'flex', flexDirection: 'column', alignItems: 'center'}} // 변경: flexbox로 정렬
                   >
+                    <span style={{ fontSize: '0.6rem', color: '#ffcc00' }}>bonus</span> {/* 변경: 보너스 텍스트 위치 조정 */}
                     {recentWinningNumbers.bnusNo}
-                    <span style={{ fontSize: '0.6rem', marginLeft: '0.2rem', color: '#ffcc00' }}>bonus</span> {/* 변경: 보너스 텍스트 추가 */}
                   </span>
                 </div>
               )}
@@ -138,10 +138,10 @@ export default function Home() {
                       ))}
                       <span
                         className="number bonus"
-                        style={{backgroundColor: getBackgroundColor(draw.bnusNo), border: '2px solid #ffcc00'}} // 변경: 보너스 번호에 테두리 추가
+                        style={{backgroundColor: getBackgroundColor(draw.bnusNo), border: '2px solid #ffcc00', display: 'flex', flexDirection: 'column', alignItems: 'center'}} // 변경: flexbox로 정렬
                       >
+                        <span style={{ fontSize: '0.6rem', color: '#ffcc00' }}>bonus</span> {/* 변경: 보너스 텍스트 위치 조정 */}
                         {draw.bnusNo}
-                        <span style={{ fontSize: '0.6rem', marginLeft: '0.2rem', color: '#ffcc00' }}>bonus</span> {/* 변경: 보너스 텍스트 추가 */}
                       </span>
                     </div>
                   </div>
