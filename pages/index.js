@@ -109,7 +109,7 @@ export default function Home() {
                     className="number bonus"
                     style={{backgroundColor: getBackgroundColor(recentWinningNumbers.bnusNo), border: '2px solid #ffcc00', display: 'flex', flexDirection: 'column', alignItems: 'center'}} // 변경: flexbox로 정렬
                   >
-                    <span style={{ fontSize: '0.6rem', color: '#ffcc00' }}>bonus</span> {/* 변경: 보너스 텍스트 위치 조정 */}
+                    <span style={{ fontSize: '0.6rem', color: 'black' }}>bonus</span> {/* 변경: 보너스 텍스트 위치 조정 */}
                     {recentWinningNumbers.bnusNo}
                   </span>
                 </div>
@@ -140,7 +140,7 @@ export default function Home() {
                         className="number bonus"
                         style={{backgroundColor: getBackgroundColor(draw.bnusNo), border: '2px solid #ffcc00', display: 'flex', flexDirection: 'column', alignItems: 'center'}} // 변경: flexbox로 정렬
                       >
-                        <span style={{ fontSize: '0.6rem', color: '#ffcc00' }}>bonus</span> {/* 변경: 보너스 텍스트 위치 조정 */}
+                        <span style={{ fontSize: '0.6rem', color: 'black' }}>bonus</span> {/* 변경: 보너스 텍스트 위치 조정 */}
                         {draw.bnusNo}
                       </span>
                     </div>
