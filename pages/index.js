@@ -178,7 +178,7 @@ export default function Home() {
             </div>
             
             {lottoNumbers.length > 0 && (
-              <div className="result animated"> {/* 변경: animated 클래스 추가 */}
+              <div className="result animated" key={animationKey}> {/* 변경: animationKey 추가 */}
                 <h3>생성된 번호</h3>
                 <div className="numbers">
                   {lottoNumbers.map((number, index) => (
