@@ -178,7 +178,7 @@ export default function Home() {
             </div>
             
             {lottoNumbers.length > 0 && (
-              <div className="result">
+              <div className="result animated"> {/* 변경: animated 클래스 추가 */}
                 <h3>생성된 번호</h3>
                 <div className="numbers">
                   {lottoNumbers.map((number, index) => (
@@ -288,6 +288,21 @@ export default function Home() {
         @media (max-width: 768px) {
           .content {
             flex-direction: column;
+          }
+        }
+        
+        .animated {
+          animation: fadeIn 0.5s ease-in-out; // 변경: 애니메이션 추가
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-20px); // 변경: 위에서 아래로 나타나는 효과
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
           }
         }
       `}</style>
