@@ -184,7 +184,7 @@ export default function Home() {
                   {lottoNumbers.map((number, index) => (
                     <span
                       key={index}
-                      className="number"
+                      className="number rotate" // 변경: rotate 클래스 추가
                       style={{backgroundColor: getBackgroundColor(number)}}
                     >
                       {number}
@@ -303,6 +303,19 @@ export default function Home() {
           to {
             opacity: 1;
             transform: translateY(0);
+          }
+        }
+
+        .rotate {
+          animation: spin 0.5s ease-in-out; // 변경: 회전 애니메이션 추가
+        }
+
+        @keyframes spin {
+          from {
+            transform: rotate(0deg); // 시작: 회전 없음
+          }
+          to {
+            transform: rotate(360deg); // 끝: 360도 회전
           }
         }
       `}</style>
