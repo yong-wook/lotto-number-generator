@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
+import Papa from 'papaparse'; // CSV 파싱 라이브러리
 
 export default function Home() {
   const [recentWinningNumbers, setRecentWinningNumbers] = useState(null);
@@ -10,6 +11,8 @@ export default function Home() {
   const [includeNumbers, setIncludeNumbers] = useState('');
   const [lottoNumbers, setLottoNumbers] = useState([]);
   const [animationKey, setAnimationKey] = useState(0);
+  const [recommendedNumber, setRecommendedNumber] = useState(null);
+  const [finalNumbers, setFinalNumbers] = useState([]);
 
   const fetchCurrentLottoNumber = useCallback(async () => {
     try {
@@ -22,26 +25,33 @@ export default function Home() {
     }
   }, []);
 
-  const fetchPastWinningNumbers = useCallback(async () => {
-    if (!currentDrawNo) return;
-
+  const fetchPastWinningNumbersFromCSV = useCallback(async () => {
     try {
-      const response = await fetch(`/api/past-lotto?currentDrawNo=${currentDrawNo}`);
-      const data = await response.json();
-      setPastWinningNumbers(data);
-      setShowPastNumbers(true);
+      const response = await fetch('/lotto_results.csv'); // public 폴더에 있는 파일 경로
+      const text = await response.text();
+      Papa.parse(text, {
+        header: true,
+        complete: (results) => {
+          const data = results.data;
+          setPastWinningNumbers(data);
+          setShowPastNumbers(true);
+        },
+        error: (error) => {
+          console.error('CSV 파일 읽기 실패:', error);
+        }
+      });
     } catch (error) {
-      console.error('과거 당첨 번호 가져오기 실패:', error);
+      console.error('CSV 파일 가져오기 실패:', error);
     }
-  }, [currentDrawNo]);
+  }, []);
 
   const togglePastNumbers = useCallback(() => {
     if (!showPastNumbers && pastWinningNumbers.length === 0) {
-      fetchPastWinningNumbers();
+      fetchPastWinningNumbersFromCSV();
     } else {
       setShowPastNumbers(!showPastNumbers);
     }
-  }, [showPastNumbers, pastWinningNumbers, fetchPastWinningNumbers]);
+  }, [showPastNumbers, pastWinningNumbers, fetchPastWinningNumbersFromCSV]);
 
   useEffect(() => {
     fetchCurrentLottoNumber();
@@ -79,6 +89,58 @@ export default function Home() {
     return '#ffffff';
   };
 
+  const recommendNumbers = useCallback(() => {
+    const pastNumbers = [];
+    const numberCounts = {};
+
+    // 과거 당첨 번호 수집
+    pastWinningNumbers.forEach(draw => {
+      for (let i = 1; i <= 6; i++) {
+        const number = draw[`drwtNo${i}`];
+        pastNumbers.push(number);
+        numberCounts[number] = (numberCounts[number] || 0) + 1;
+      }
+      const bonusNumber = draw.bnusNo;
+      pastNumbers.push(bonusNumber);
+      numberCounts[bonusNumber] = (numberCounts[bonusNumber] || 0) + 1;
+    });
+
+    // 가장 많이 등장한 번호 1개 추천
+    const mostCommonNumber = Object.entries(numberCounts).reduce((a, b) => (b[1] > a[1] ? b : a), [null, 0])[0];
+
+    // 가장 적게 등장한 번호 4개
+    const leastCommonNumbers = Object.entries(numberCounts)
+      .sort((a, b) => a[1] - b[1])
+      .slice(0, 4)
+      .map(num => num[0]);
+
+    // 제외할 번호
+    const excludedNumbers = new Set(leastCommonNumbers);
+    excludedNumbers.add(mostCommonNumber);
+
+    // 랜덤으로 번호 추출
+    const remainingNumbers = Object.keys(numberCounts).filter(num => !excludedNumbers.has(num));
+    const randomNumbers = [];
+    while (randomNumbers.length < 5) {
+      const randomIndex = Math.floor(Math.random() * remainingNumbers.length);
+      const randomNum = remainingNumbers[randomIndex];
+      if (!randomNumbers.includes(randomNum)) {
+        randomNumbers.push(randomNum);
+      }
+    }
+
+    // 최종 번호 리스트
+    const finalNumbers = [mostCommonNumber, ...randomNumbers];
+    setRecommendedNumber(mostCommonNumber);
+    setFinalNumbers(finalNumbers);
+  }, [pastWinningNumbers]);
+
+  useEffect(() => {
+    if (pastWinningNumbers.length > 0) {
+      recommendNumbers();
+    }
+  }, [pastWinningNumbers, recommendNumbers]);
+
   return (
     <div className="container">
       <Head>
@@ -107,9 +169,9 @@ export default function Home() {
                   ))}
                   <span
                     className="number bonus"
-                    style={{backgroundColor: getBackgroundColor(recentWinningNumbers.bnusNo), border: '2px solid #ffcc00', display: 'flex', flexDirection: 'column', alignItems: 'center'}} // 변경: flexbox로 정렬
+                    style={{backgroundColor: getBackgroundColor(recentWinningNumbers.bnusNo), border: '2px solid #ffcc00', display: 'flex', flexDirection: 'column', alignItems: 'center'}}
                   >
-                    <span style={{ fontSize: '0.6rem', color: 'black' }}>bonus</span> {/* 변경: 보너스 텍스트 위치 조정 */}
+                    <span style={{ fontSize: '0.6rem', color: 'black' }}>bonus</span>
                     {recentWinningNumbers.bnusNo}
                   </span>
                 </div>
@@ -138,9 +200,9 @@ export default function Home() {
                       ))}
                       <span
                         className="number bonus"
-                        style={{backgroundColor: getBackgroundColor(draw.bnusNo), border: '2px solid #ffcc00', display: 'flex', flexDirection: 'column', alignItems: 'center'}} // 변경: flexbox로 정렬
+                        style={{backgroundColor: getBackgroundColor(draw.bnusNo), border: '2px solid #ffcc00', display: 'flex', flexDirection: 'column', alignItems: 'center'}}
                       >
-                        <span style={{ fontSize: '0.6rem', color: 'black' }}>bonus</span> {/* 변경: 보너스 텍스트 위치 조정 */}
+                        <span style={{ fontSize: '0.6rem', color: 'black' }}>bonus</span>
                         {draw.bnusNo}
                       </span>
                     </div>
@@ -193,6 +255,23 @@ export default function Home() {
                 </div>
               </div>
             )}
+
+            {finalNumbers.length > 0 && (
+              <div className="result">
+                <h3>추천 번호</h3>
+                <div className="numbers">
+                  {finalNumbers.map((number, index) => (
+                    <span
+                      key={index}
+                      className="number"
+                      style={{backgroundColor: getBackgroundColor(number)}}
+                    >
+                      {number}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
@@ -203,25 +282,25 @@ export default function Home() {
           padding: 0 0.5rem;
           display: flex;
           flex-direction: column;
-          justify-content: flex-start; // 변경: center에서 flex-start로
+          justify-content: flex-start;
           align-items: center;
         }
 
         main {
-          padding: 1rem 0; // 변경: 5rem에서 1rem으로 줄임
+          padding: 1rem 0;
           flex: 1;
           display: flex;
           flex-direction: column;
-          justify-content: flex-start; // 변경: center에서 flex-start로
+          justify-content: flex-start;
           align-items: center;
           width: 100%;
           max-width: 1200px;
         }
 
         .title {
-          margin: 0 0 1rem; // 변경: 2rem에서 1rem으로 줄임
+          margin: 0 0 1rem;
           line-height: 1.15;
-          font-size: 2.5rem; // 변경: 3rem에서 2.5rem으로 줄임
+          font-size: 2.5rem;
           text-align: center;
         }
 
