@@ -9,6 +9,7 @@ export default function Home() {
   const [excludeNumbers, setExcludeNumbers] = useState('');
   const [includeNumbers, setIncludeNumbers] = useState('');
   const [lottoNumbers, setLottoNumbers] = useState([]);
+  const [recommendedNumbers, setRecommendedNumbers] = useState([]);
   const [animationKey, setAnimationKey] = useState(0);
 
   const fetchCurrentLottoNumber = useCallback(async () => {
@@ -60,6 +61,16 @@ export default function Home() {
     setLottoNumbers(numbers);
     setAnimationKey(prev => prev + 1); // 애니메이션 키 증가
   }, [excludeNumbers, includeNumbers]);
+
+  const fetchRecommendedNumbers = async () => {
+    try {
+      const response = await fetch('/api/recommend-lotto');
+      const data = await response.json();
+      setRecommendedNumbers(data.recommendedNumbers);
+    } catch (error) {
+      console.error('추천 번호 가져오기 실패:', error);
+    }
+  };
 
   useEffect(() => {
     if (lottoNumbers.length > 0) {
@@ -157,6 +168,9 @@ export default function Home() {
               <button onClick={generateLottoNumbers} className="generate-button">
                 번호 생성하기
               </button>
+              <button onClick={fetchRecommendedNumbers} className="generate-button">
+                추천 번호 생성하기
+              </button>
             </div>
             
             {lottoNumbers.length > 0 && (
@@ -164,6 +178,23 @@ export default function Home() {
                 <h3>생성된 번호</h3>
                 <div className="numbers">
                   {lottoNumbers.map((number, index) => (
+                    <span
+                      key={index}
+                      className="number"
+                      style={{backgroundColor: getBackgroundColor(number)}}
+                    >
+                      {number}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {recommendedNumbers.length > 0 && (
+              <div className="result animated" key={animationKey}>
+                <h3>추천 번호</h3>
+                <div className="numbers">
+                  {recommendedNumbers.map((number, index) => (
                     <span
                       key={index}
                       className="number"
