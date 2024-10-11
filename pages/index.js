@@ -204,10 +204,10 @@ export default function Home() {
                 />
               </div>
               <button onClick={generateLottoNumbers} className="generate-button">
-                번호 생성하기
+                생성하기
               </button>
               <button onClick={fetchRecommendedNumbers} className="generate-button">
-                추천 번호 생성하기
+                AI추천
               </button>
             </div>
             
