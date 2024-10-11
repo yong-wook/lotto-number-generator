@@ -60,6 +60,11 @@ function collectPastNumbers(lottoData) {
 }
 
 function getRecommendedNumbers(pastNumbers) {
+  if (pastNumbers.length === 0) {
+    console.error('과거 번호가 없습니다. 추천 번호를 생성할 수 없습니다.');
+    return [null]; // 추천 번호가 없음을 나타내는 null 반환
+  }
+
   const numberCounts = {};
 
   pastNumbers.forEach(num => {
@@ -67,24 +72,38 @@ function getRecommendedNumbers(pastNumbers) {
   });
 
   const sortedNumbers = Object.entries(numberCounts).sort((a, b) => b[1] - a[1]);
-  const recommendedNumber = sortedNumbers[0] ? sortedNumbers[0][0] : null;
+  
+  // 최대 출현 번호 두 개 선택
+  const recommendedNumbers = sortedNumbers.slice(0, 2).map(num => Number(num[0]));
+
   const leastCommonNumbers = sortedNumbers.slice(-4).map(num => num[0]);
 
   const excludedNumbers = new Set(leastCommonNumbers);
-  if (recommendedNumber) excludedNumbers.add(recommendedNumber);
+  recommendedNumbers.forEach(num => excludedNumbers.add(num)); // 추천 번호도 제외
 
-  const remainingNumbers = Object.keys(numberCounts).filter(num => !excludedNumbers.has(num));
-  const randomNumbers = [];
-
-  while (randomNumbers.length < 5) {
-    const randomIndex = randomInt(0, remainingNumbers.length);
-    const randomNum = remainingNumbers[randomIndex];
-    if (!randomNumbers.includes(randomNum)) {
-      randomNumbers.push(randomNum);
+  // 중복을 방지하기 위해 Set을 사용하여 랜덤 번호 생성
+  const randomNumbersSet = new Set();
+  while (randomNumbersSet.size < 4) { // 5개 랜덤 번호 생성
+    const num = randomInt(1, 46); // 1부터 45까지의 숫자 생성
+    if (!excludedNumbers.has(num)) { // 최소 출현 번호 및 추천 번호 제외
+      randomNumbersSet.add(num);
     }
   }
 
-  const additionalRandomNumbers = Array.from({ length: 6 }, () => randomInt(1, 46));
+  // 추천 번호와 랜덤 번호를 합친 후 오름차순 정렬
+  const finalNumbers = [...recommendedNumbers, ...Array.from(randomNumbersSet)].map(Number).sort((a, b) => a - b);
 
-  return [recommendedNumber, ...randomNumbers, ...additionalRandomNumbers];
+  // 최소 출현 번호가 finalNumbers에 포함되는지 확인
+  const hasLeastCommon = leastCommonNumbers.some(num => finalNumbers.includes(Number(num)));
+  if (hasLeastCommon) {
+    console.error('최소 출현 번호가 finalNumbers에 포함되었습니다:', leastCommonNumbers);
+    // 최소 출현 번호가 포함된 경우, 다시 랜덤 번호를 생성
+    return getRecommendedNumbers(pastNumbers); // 재귀 호출
+  }
+
+  // 디버그용 콘솔 출력
+  console.log('추천 번호:', recommendedNumbers);
+  console.log('최소 출현 번호:', leastCommonNumbers); // 최소 출현 번호 출력
+
+  return finalNumbers;
 }

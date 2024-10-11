@@ -4,7 +4,7 @@ import Head from 'next/head';
 export default function Home() {
   const [recentWinningNumbers, setRecentWinningNumbers] = useState(null);
   const [currentDrawNo, setCurrentDrawNo] = useState(null);
-  const [pastWinningNumbers, setPastWinningNumbers] = useState([]);
+  const [pastWinningNumbers, setPastWinningNumbers] = useState([]); // 초기 상태를 빈 배열로 설정
   const [showPastNumbers, setShowPastNumbers] = useState(false);
   const [excludeNumbers, setExcludeNumbers] = useState('');
   const [includeNumbers, setIncludeNumbers] = useState('');
@@ -24,15 +24,21 @@ export default function Home() {
   }, []);
 
   const fetchPastWinningNumbersFromAPI = useCallback(async () => {
+    if (!currentDrawNo) {
+      console.error('현재 회차 번호가 설정되지 않았습니다.');
+      return; // 현재 회차 번호가 없으면 함수 종료
+    }
+
     try {
-      const response = await fetch('/api/past-lotto'); // past-lotto.js API 경로
+      const response = await fetch(`/api/past-lotto?currentDrawNo=${currentDrawNo}`); // 현재 회차 번호를 쿼리로 전달
       const data = await response.json();
+      console.log("가져온 데이터:", data); // 데이터 확인
       setPastWinningNumbers(data);
       setShowPastNumbers(true);
     } catch (error) {
       console.error('과거 당첨 번호 가져오기 실패:', error);
     }
-  }, []);
+  }, [currentDrawNo]); // currentDrawNo를 의존성 배열에 추가
 
   const togglePastNumbers = useCallback(() => {
     if (!showPastNumbers && pastWinningNumbers.length === 0) {
@@ -47,6 +53,10 @@ export default function Home() {
   }, [fetchCurrentLottoNumber]);
 
   const generateLottoNumbers = useCallback(() => {
+    // 기존 번호 초기화
+    setLottoNumbers([]); // 기존 생성된 번호 삭제
+    setRecommendedNumbers([]); // 추천 번호도 초기화
+
     const excluded = excludeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
     const included = includeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
     
@@ -58,15 +68,19 @@ export default function Home() {
       }
     }
     numbers.sort((a, b) => a - b);
-    setLottoNumbers(numbers);
+    setLottoNumbers(numbers); // 새로운 번호 설정
     setAnimationKey(prev => prev + 1); // 애니메이션 키 증가
   }, [excludeNumbers, includeNumbers]);
 
   const fetchRecommendedNumbers = async () => {
+    // 기존 추천 번호 초기화
+    setRecommendedNumbers([]); // 기존 추천 번호 삭제
+    setLottoNumbers([]); // 기존 생성된 번호 삭제
+
     try {
       const response = await fetch('/api/recommend-lotto');
       const data = await response.json();
-      setRecommendedNumbers(data.recommendedNumbers);
+      setRecommendedNumbers(data.recommendedNumbers); // 추천 번호를 배열로 설정
     } catch (error) {
       console.error('추천 번호 가져오기 실패:', error);
     }
@@ -135,7 +149,31 @@ export default function Home() {
                 {pastWinningNumbers.map((draw) => (
                   <div key={draw.drwNo} className="past-draw">
                     <p>제 {draw.drwNo}회 ({draw.drwNoDate})</p>
-                    {/* 추가: 당첨 번호 표시 */}
+                    <div className="numbers">
+                      {[
+                        draw.drwtNo1, 
+                        draw.drwtNo2, 
+                        draw.drwtNo3, 
+                        draw.drwtNo4, 
+                        draw.drwtNo5, 
+                        draw.drwtNo6
+                      ].map((number, index) => (
+                        <span
+                          key={index}
+                          className="number"
+                          style={{ backgroundColor: getBackgroundColor(number) }}
+                        >
+                          {number}
+                        </span>
+                      ))}
+                      <span
+                        className="number bonus"
+                        style={{ backgroundColor: getBackgroundColor(draw.bnusNo), border: '2px solid #ffcc00', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                      >
+                        <span style={{ fontSize: '0.6rem', color: 'black' }}>bonus</span>
+                        {draw.bnusNo}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -284,6 +322,8 @@ export default function Home() {
           border-radius: 5px;
           cursor: pointer;
           transition: background-color 0.3s;
+          width: 100%; /* 버튼의 가로 크기를 동일하게 설정 */
+          margin-bottom: 1rem; /* 버튼 간격을 띄우기 위해 아래쪽 여백 추가 */
         }
 
         .past-numbers-button:hover, .generate-button:hover {
