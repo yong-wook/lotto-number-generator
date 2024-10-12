@@ -3,18 +3,19 @@ import Head from 'next/head';
 
 export default function Home() {
   const [recentWinningNumbers, setRecentWinningNumbers] = useState(null);
-  const [currentDrawNo, setCurrentDrawNo] = useState(null);
-  const [pastWinningNumbers, setPastWinningNumbers] = useState([]); // 초기 상태를 빈 배열로 설정
-  const [showPastNumbers, setShowPastNumbers] = useState(false);
+  const [currentDrawNo, setCurrentDrawNo] = useState(1141);
+  const [pastWinningNumbers, setPastWinningNumbers] = useState([]); // 과거 당첨번호 상태
+  const [showPastNumbers, setShowPastNumbers] = useState(false); // 과거 당첨번호 표시 여부
   const [excludeNumbers, setExcludeNumbers] = useState('');
   const [includeNumbers, setIncludeNumbers] = useState('');
   const [lottoNumbers, setLottoNumbers] = useState([]);
   const [finalNumbers, setFinalNumbers] = useState([]); // 변수명 변경
   const [animationKey, setAnimationKey] = useState(0);
-  const [loading, setLoading] = useState(false); // 로딩 상태 추가
+  const [loadingRecent, setLoadingRecent] = useState(false); // 최근 당첨번호 로딩 상태
+  const [loadingPast, setLoadingPast] = useState(false); // 과거 당첨번호 로딩 상태
 
   const fetchCurrentLottoNumber = useCallback(async () => {
-    setLoading(true); // 데이터 가져오기 시작 시 로딩 상태 설정
+    setLoadingRecent(true); // 최근 당첨번호 로딩 시작
     try {
       const response = await fetch('/api/lotto');
       const data = await response.json();
@@ -23,34 +24,29 @@ export default function Home() {
     } catch (error) {
       console.error('현재 로또 번호 가져오기 실패:', error);
     } finally {
-      setLoading(false); // 데이터 가져오기 완료 후 로딩 상태 해제
+      setLoadingRecent(false); // 로딩 상태 해제
     }
   }, []);
 
-  const fetchPastWinningNumbersFromAPI = useCallback(async () => {
-    if (!currentDrawNo) {
-      console.error('현재 회차 번호가 설정되지 않았습니다.');
-      return; // 현재 회차 번호가 없으면 함수 종료
-    }
-
+  const fetchPastWinningNumbers = async () => {
+    setLoadingPast(true); // 로딩 시작
     try {
-      const response = await fetch(`/api/past-lotto?currentDrawNo=${currentDrawNo}`); // 현재 회차 번호를 쿼리로 전달
-      const data = await response.json();
-      console.log("가져온 데이터:", data); // 데이터 확인
-      setPastWinningNumbers(data);
-      setShowPastNumbers(true);
+      const response = await fetch(`/api/past-lotto?currentDrawNo=${currentDrawNo}`); // 동적 회차번호 사용
+      const data = await response.json(); // JSON으로 변환
+      setPastWinningNumbers(data); // 과거 당첨번호 업데이트
     } catch (error) {
-      console.error('과거 당첨 번호 가져오기 실패:', error);
+      console.error("Error fetching past winning numbers:", error);
+    } finally {
+      setLoadingPast(false); // 로딩 상태 해제
     }
-  }, [currentDrawNo]); // currentDrawNo를 의존성 배열에 추가
+  };
 
   const togglePastNumbers = useCallback(() => {
-    if (!showPastNumbers && pastWinningNumbers.length === 0) {
-      fetchPastWinningNumbersFromAPI(); // API 호출
-    } else {
-      setShowPastNumbers(!showPastNumbers);
+    if (!showPastNumbers) {
+      fetchPastWinningNumbers(); // API 호출
     }
-  }, [showPastNumbers, pastWinningNumbers, fetchPastWinningNumbersFromAPI]);
+    setShowPastNumbers(!showPastNumbers); // 상태 토글
+  }, [showPastNumbers]);
 
   useEffect(() => {
     fetchCurrentLottoNumber();
@@ -119,28 +115,30 @@ export default function Home() {
         <div className="content">
           <div className="left-column">
             <div className="recent-numbers">
-              <h3>최근 당첨번호 (제 {recentWinningNumbers?.drwNo || ''}회)</h3>
-              <p>{recentWinningNumbers?.drwNoDate || ''}</p>
-              {loading ? ( // 로딩 상태에 따라 표시
-                <p>로딩 중...</p>
+              {loadingRecent ? ( // 최근 당첨번호 로딩 상태에 따라 표시
+                <p className="loading-message">로딩 중...</p>
               ) : recentWinningNumbers ? (
-                <div className="numbers">
-                  {[1, 2, 3, 4, 5, 6].map((num) => (
+                <div>
+                  <h3>최근 당첨번호 (제 {recentWinningNumbers.drwNo}회)</h3>
+                  <p>{recentWinningNumbers.drwNoDate}</p>
+                  <div className="numbers">
+                    {[1, 2, 3, 4, 5, 6].map((num) => (
+                      <span
+                        key={num}
+                        className="number"
+                        style={{backgroundColor: getBackgroundColor(recentWinningNumbers[`drwtNo${num}`])}}
+                      >
+                        {recentWinningNumbers[`drwtNo${num}`]}
+                      </span>
+                    ))}
                     <span
-                      key={num}
-                      className="number"
-                      style={{backgroundColor: getBackgroundColor(recentWinningNumbers[`drwtNo${num}`])}}
+                      className="number bonus"
+                      style={{backgroundColor: getBackgroundColor(recentWinningNumbers.bnusNo), border: '2px solid #ffcc00', display: 'flex', flexDirection: 'column', alignItems: 'center'}}
                     >
-                      {recentWinningNumbers[`drwtNo${num}`]}
+                      <span style={{ fontSize: '0.6rem', color: 'black' }}>bonus</span>
+                      {recentWinningNumbers.bnusNo}
                     </span>
-                  ))}
-                  <span
-                    className="number bonus"
-                    style={{backgroundColor: getBackgroundColor(recentWinningNumbers.bnusNo), border: '2px solid #ffcc00', display: 'flex', flexDirection: 'column', alignItems: 'center'}}
-                  >
-                    <span style={{ fontSize: '0.6rem', color: 'black' }}>bonus</span>
-                    {recentWinningNumbers.bnusNo}
-                  </span>
+                  </div>
                 </div>
               ) : (
                 <p>당첨 번호를 가져오는 데 실패했습니다.</p> // 데이터가 없을 때 메시지
@@ -148,43 +146,38 @@ export default function Home() {
             </div>
             
             <button onClick={togglePastNumbers} className="past-numbers-button">
-              {showPastNumbers ? '지난 당첨번호 숨기기' : '지난 4주간 당첨번호 조회'}
+              {showPastNumbers ? '지난 당첨번호 숨기기' : '지난 당첨번호 조회'}
             </button>
             
-            {showPastNumbers && (
-              <div className="past-numbers">
-                <h3>지난 4주간 당첨번호</h3>
-                {pastWinningNumbers.map((draw) => (
-                  <div key={draw.drwNo} className="past-draw">
-                    <p>제 {draw.drwNo}회 ({draw.drwNoDate})</p>
-                    <div className="numbers">
-                      {[
-                        draw.drwtNo1, 
-                        draw.drwtNo2, 
-                        draw.drwtNo3, 
-                        draw.drwtNo4, 
-                        draw.drwtNo5, 
-                        draw.drwtNo6
-                      ].map((number, index) => (
-                        <span
-                          key={index}
-                          className="number"
-                          style={{ backgroundColor: getBackgroundColor(number) }}
-                        >
-                          {number}
-                        </span>
-                      ))}
+            {loadingPast ? ( // 과거 당첨번호 로딩 상태에 따라 표시
+              <p className="loading-message">로딩 중...</p>
+            ) : showPastNumbers && pastWinningNumbers.length > 0 ? (
+              pastWinningNumbers.map((number, index) => (
+                <div key={index}>
+                  <h3>제 {number.drwNo}회 ({number.drwNoDate})</h3>
+                  <div className="numbers">
+                    {[1, 2, 3, 4, 5, 6].map((num) => (
                       <span
-                        className="number bonus"
-                        style={{ backgroundColor: getBackgroundColor(draw.bnusNo), border: '2px solid #ffcc00', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                        key={num}
+                        className="number"
+                        style={{ backgroundColor: getBackgroundColor(number[`drwtNo${num}`]) }}
                       >
-                        <span style={{ fontSize: '0.6rem', color: 'black' }}>bonus</span>
-                        {draw.bnusNo}
+                        {number[`drwtNo${num}`]}
                       </span>
-                    </div>
+                    ))}
+                    <span
+                      className="number bonus"
+                      style={{ backgroundColor: getBackgroundColor(number.bnusNo), border: '2px solid #ffcc00', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                    >
+                      <span style={{ fontSize: '0.6rem', color: 'black' }}>bonus</span>
+                      {number.bnusNo}
+                    </span>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))
+            ) : (
+              pastWinningNumbers.length === 0 ? null : ( // 데이터가 없을 때 아무것도 표시하지 않음
+                null)
             )}
           </div>
 
@@ -350,6 +343,16 @@ export default function Home() {
           .content {
             flex-direction: column;
           }
+        }
+
+        .loading-message {
+          animation: fadeIn 1s infinite; // 애니메이션 추가
+        }
+
+        @keyframes fadeIn {
+          0% { opacity: 0; }
+          50% { opacity: 1; }
+          100% { opacity: 0; }
         }
       `}</style>
     </div>
