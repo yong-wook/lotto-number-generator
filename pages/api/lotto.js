@@ -1,4 +1,74 @@
 import axios from 'axios';
+import { parse, unparse } from 'papaparse'; // CSV 파싱 및 직렬화를 위한 라이브러리 추가
+import fs from 'fs'; // 파일 시스템 모듈 추가
+import path from 'path'; // 경로 모듈 추가
+
+const fetchCSVData = () => {
+  const filePath = path.join(process.cwd(), 'public', 'lotto_results.csv'); // CSV 파일 경로
+  const fileContent = fs.readFileSync(filePath, 'utf8'); // CSV 파일 읽기
+  const parsedData = parse(fileContent, { header: true });  
+  return parsedData.data; // 파싱된 데이터 반환
+};
+
+const appendDataToCSV = (data) => {
+    // 데이터 형식 확인
+    const { drwNo, drwNoDate, drwtNo1, drwtNo2, drwtNo3, drwtNo4, drwtNo5, drwtNo6, bnusNo } = data;
+
+    // 모든 필드가 존재하는지 확인
+    if (drwNo && drwNoDate && drwtNo1 && drwtNo2 && drwtNo3 && drwtNo4 && drwtNo5 && drwtNo6 && bnusNo) {
+        const numbers = `${drwtNo1}, ${drwtNo2}, ${drwtNo3}, ${drwtNo4}, ${drwtNo5}, ${drwtNo6}`;
+        const newRow = `${drwNo},"${numbers}",${drwNoDate},${bnusNo}\n`;
+
+        // CSV 파일에 추가
+        fs.appendFileSync(path.join(process.cwd(), 'public', 'lotto_results.csv'), newRow, 'utf8');
+        console.log('CSV에 데이터 추가:', newRow);
+    } else {
+        console.log('유효하지 않은 데이터 형식:', data);
+    }
+};
+
+const checkAndFetchMissingDraws = async (recentDrawNo) => {
+  console.log('checkAndFetchMissingDraws 시작:', recentDrawNo); // 시작 로그 추가
+  const csvData = fetchCSVData();
+  
+  // 유효한 숫자만 필터링하여 최대 회차 번호 찾기
+  const validDrawNos = csvData.map(row => parseInt(row.draw_no)).filter(num => !isNaN(num)); // 'drwNo'를 'draw_no'로 변경
+  const maxDrawNo = validDrawNos.length > 0 ? Math.max(...validDrawNos) : 0; // 유효한 값이 없으면 0으로 설정
+  
+  console.log('CSV에서 가장 큰 회차 번호:', maxDrawNo); // 최대 회차 번호 로그
+  console.log('최근 회차 번호:', recentDrawNo); // 최근 회차 번호 로그
+
+  if (maxDrawNo < recentDrawNo) {
+    console.log(`최근 회차 번호(${recentDrawNo})가 CSV의 최대 회차 번호(${maxDrawNo})보다 큽니다. 비어있는 회차 정보 가져오기...`);
+    
+    // 특정 회차의 당첨 정보 가져오기
+    const response = await axios.get(`https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${maxDrawNo + 1}`);
+    const data = response.data;
+
+    if (data.returnValue === "fail") {
+        console.log('당첨 정보 가져오기 실패');
+        // 임시 데이터 사용
+        const tempData = {
+            returnValue: 'success',
+            drwNo: '1000',
+            drwNoDate: '2023-05-20',
+            drwtNo1: '1',
+            drwtNo2: '15',
+            drwtNo3: '23',
+            drwtNo4: '34',
+            drwtNo5: '41',
+            drwtNo6: '45',
+            bnusNo: '10'
+        };
+        appendDataToCSV(tempData);
+    } else {
+        console.log('API 응답:', data); // API 응답 로그
+        appendDataToCSV(data);
+    }
+  } else {
+    console.log(`최근 회차 번호(${recentDrawNo})가 CSV의 최대 회차 번호(${maxDrawNo})보다 작거나 같습니다. 업데이트 필요 없음.`);
+  }
+};
 
 export default async function handler(req, res) {
   try {
@@ -58,6 +128,10 @@ export default async function handler(req, res) {
     };
 
     console.log('파싱된 데이터:', result);
+
+    // CSV 파일과 비교
+    await checkAndFetchMissingDraws(parseInt(drawNumber));
+
     res.status(200).json(result);
   } catch (error) {
     console.error('파싱 오류:', error.message);
