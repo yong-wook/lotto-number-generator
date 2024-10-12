@@ -9,7 +9,7 @@ export default function Home() {
   const [excludeNumbers, setExcludeNumbers] = useState('');
   const [includeNumbers, setIncludeNumbers] = useState('');
   const [lottoNumbers, setLottoNumbers] = useState([]);
-  const [recommendedNumbers, setRecommendedNumbers] = useState([]);
+  const [finalNumbers, setFinalNumbers] = useState([]); // 변수명 변경
   const [animationKey, setAnimationKey] = useState(0);
   const [loading, setLoading] = useState(false); // 로딩 상태 추가
 
@@ -59,7 +59,7 @@ export default function Home() {
   const generateLottoNumbers = useCallback(() => {
     // 기존 번호 초기화
     setLottoNumbers([]); // 기존 생성된 번호 삭제
-    setRecommendedNumbers([]); // 추천 번호도 초기화
+    setFinalNumbers([]); // 추천 번호도 초기화
 
     const excluded = excludeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
     const included = includeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
@@ -77,14 +77,14 @@ export default function Home() {
   }, [excludeNumbers, includeNumbers]);
 
   const fetchRecommendedNumbers = async () => {
-    // 기존 추천 번호 초기화
-    setRecommendedNumbers([]); // 기존 추천 번호 삭제
+    setFinalNumbers([]); // 기존 추천 번호 삭제
     setLottoNumbers([]); // 기존 생성된 번호 삭제
 
     try {
       const response = await fetch('/api/recommend-lotto');
       const data = await response.json();
-      setRecommendedNumbers(data.recommendedNumbers); // 추천 번호를 배열로 설정
+      console.log("추천 번호 데이터:", data); // 데이터 확인
+      setFinalNumbers(data.finalNumbers); // 추천 번호를 배열로 설정
     } catch (error) {
       console.error('추천 번호 가져오기 실패:', error);
     }
@@ -236,11 +236,11 @@ export default function Home() {
               </div>
             )}
 
-            {recommendedNumbers.length > 0 && (
+            {finalNumbers && finalNumbers.length > 0 && ( // finalNumbers가 정의되어 있는지 확인
               <div className="result animated" key={animationKey}>
                 <h3>추천 번호</h3>
                 <div className="numbers">
-                  {recommendedNumbers.map((number, index) => (
+                  {finalNumbers.map((number, index) => (
                     <span
                       key={index}
                       className="number"
