@@ -11,8 +11,10 @@ export default function Home() {
   const [lottoNumbers, setLottoNumbers] = useState([]);
   const [recommendedNumbers, setRecommendedNumbers] = useState([]);
   const [animationKey, setAnimationKey] = useState(0);
+  const [loading, setLoading] = useState(false); // 로딩 상태 추가
 
   const fetchCurrentLottoNumber = useCallback(async () => {
+    setLoading(true); // 데이터 가져오기 시작 시 로딩 상태 설정
     try {
       const response = await fetch('/api/lotto');
       const data = await response.json();
@@ -20,6 +22,8 @@ export default function Home() {
       setCurrentDrawNo(data.drwNo);
     } catch (error) {
       console.error('현재 로또 번호 가져오기 실패:', error);
+    } finally {
+      setLoading(false); // 데이터 가져오기 완료 후 로딩 상태 해제
     }
   }, []);
 
@@ -117,7 +121,9 @@ export default function Home() {
             <div className="recent-numbers">
               <h3>최근 당첨번호 (제 {recentWinningNumbers?.drwNo || ''}회)</h3>
               <p>{recentWinningNumbers?.drwNoDate || ''}</p>
-              {recentWinningNumbers && (
+              {loading ? ( // 로딩 상태에 따라 표시
+                <p>로딩 중...</p>
+              ) : recentWinningNumbers ? (
                 <div className="numbers">
                   {[1, 2, 3, 4, 5, 6].map((num) => (
                     <span
@@ -136,6 +142,8 @@ export default function Home() {
                     {recentWinningNumbers.bnusNo}
                   </span>
                 </div>
+              ) : (
+                <p>당첨 번호를 가져오는 데 실패했습니다.</p> // 데이터가 없을 때 메시지
               )}
             </div>
             
