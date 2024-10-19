@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Head from 'next/head';
 
 export default function Home() {
@@ -13,6 +13,12 @@ export default function Home() {
   const [animationKey, setAnimationKey] = useState(0);
   const [loadingRecent, setLoadingRecent] = useState(false); // 최근 당첨번호 로딩 상태
   const [loadingPast, setLoadingPast] = useState(false); // 과거 당첨번호 로딩 상태
+
+  // 복사 성공 메시지를 위한 새로운 상태
+  const [copySuccess, setCopySuccess] = useState('');
+  
+  // 번호를 표시하는 div에 대한 참조 생성
+  const numbersRef = useRef(null);
 
   const fetchCurrentLottoNumber = useCallback(async () => {
     setLoadingRecent(true); // 최근 당첨번호 로딩 시작
@@ -100,6 +106,18 @@ export default function Home() {
     if (num >= 31 && num <= 40) return '#aaa';
     if (num >= 41 && num <= 45) return '#b0d840';
     return '#ffffff';
+  };
+
+  // 복사 함수 추가
+  const copyToClipboard = (numbers) => {
+    const textToCopy = numbers.join(', ');
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      setCopySuccess('복사 완료!');
+      setTimeout(() => setCopySuccess(''), 2000); // 2초 후 메시지 제거
+    }, (err) => {
+      console.error('복사 실패: ', err);
+      setCopySuccess('복사 실패');
+    });
   };
 
   return (
@@ -215,7 +233,7 @@ export default function Home() {
             {lottoNumbers.length > 0 && (
               <div className="result animated" key={animationKey}>
                 <h3>생성된 번호</h3>
-                <div className="numbers">
+                <div className="numbers" ref={numbersRef}>
                   {lottoNumbers.map((number, index) => (
                     <span
                       key={index}
@@ -226,10 +244,14 @@ export default function Home() {
                     </span>
                   ))}
                 </div>
+                <button onClick={() => copyToClipboard(lottoNumbers)} className="copy-button">
+                  복사하기
+                </button>
+                {copySuccess && <p className="copy-message">{copySuccess}</p>}
               </div>
             )}
 
-            {finalNumbers && finalNumbers.length > 0 && ( // finalNumbers가 정의되어 있는지 확인
+            {finalNumbers && finalNumbers.length > 0 && (
               <div className="result animated" key={animationKey}>
                 <h3>추천 번호</h3>
                 <div className="numbers">
@@ -243,6 +265,10 @@ export default function Home() {
                     </span>
                   ))}
                 </div>
+                <button onClick={() => copyToClipboard(finalNumbers)} className="copy-button">
+                  복사하기
+                </button>
+                {copySuccess && <p className="copy-message">{copySuccess}</p>}
               </div>
             )}
           </div>
@@ -323,7 +349,7 @@ export default function Home() {
           border-radius: 5px;
           cursor: pointer;
           transition: background-color 0.3s;
-          width: 100%; /* 버튼의 가로 크기를 동일하게 설정 */
+          width: 100%; /* 버���의 가로 크기를 동일하게 설정 */
           margin-bottom: 1rem; /* 버튼 간격을 띄우기 위해 아래쪽 여백 추가 */
         }
 
@@ -353,6 +379,28 @@ export default function Home() {
           0% { opacity: 0; }
           50% { opacity: 1; }
           100% { opacity: 0; }
+        }
+
+        .copy-button {
+          margin-top: 1rem;
+          padding: 0.5rem 1rem;
+          font-size: 1rem;
+          background-color: #4CAF50;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: background-color 0.3s;
+        }
+
+        .copy-button:hover {
+          background-color: #45a049;
+        }
+
+        .copy-message {
+          margin-top: 0.5rem;
+          color: #4CAF50;
+          font-weight: bold;
         }
       `}</style>
     </div>
