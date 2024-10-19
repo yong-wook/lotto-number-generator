@@ -152,7 +152,7 @@ export default function Home() {
       </Head>
 
       <main>
-        <h1 className="title">로또 번호 생성기</h1>
+        <h1 className="title">Use Wook`s 로또</h1>
         
         <div className="content">
           <div className="left-column">
