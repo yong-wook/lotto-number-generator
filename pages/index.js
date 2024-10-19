@@ -88,7 +88,7 @@ export default function Home() {
       console.log("추천 번호 데이터:", data); // 데이터 확인
       setFinalNumbers(data.finalNumbers); // 추천 번호를 배열로 설정
     } catch (error) {
-      console.error('추천 번호 가져오기 ���패:', error);
+      console.error('추천 번호 가져오기 패:', error);
     }
   };
 
@@ -122,15 +122,23 @@ export default function Home() {
 
   // 카카오톡 공유 함수
   const shareToKakao = (numbers) => {
-    if (typeof window !== 'undefined' && window.Kakao && window.Kakao.Link) {
-      window.Kakao.Link.sendDefault({
-        objectType: 'text',
-        text: `로또 번호: ${numbers.join(', ')}`,
-        link: {
-          mobileWebUrl: window.location.href,
-          webUrl: window.location.href,
-        },
-      });
+    if (typeof window !== 'undefined' && window.Kakao) {
+      if (!window.Kakao.isInitialized()) {
+        window.Kakao.init(process.env.NEXT_PUBLIC_KAKAO_APP_KEY);
+      }
+      
+      if (window.Kakao.Link) {
+        window.Kakao.Link.sendDefault({
+          objectType: 'text',
+          text: `로또 번호: ${numbers.join(', ')}`,
+          link: {
+            mobileWebUrl: window.location.href,
+            webUrl: window.location.href,
+          },
+        });
+      } else {
+        console.error('Kakao.Link is not available');
+      }
     } else {
       console.error('Kakao SDK is not loaded');
     }
