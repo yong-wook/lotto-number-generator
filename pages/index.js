@@ -120,6 +120,29 @@ export default function Home() {
     });
   };
 
+  // Kakao SDK 초기화
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (!window.Kakao.isInitialized()) {
+        window.Kakao.init(process.env.NEXT_PUBLIC_KAKAO_APP_KEY);
+      }
+    }
+  }, []);
+
+  // 카카오톡 공유 함수
+  const shareToKakao = (numbers) => {
+    if (typeof window !== 'undefined' && window.Kakao) {
+      window.Kakao.Link.sendDefault({
+        objectType: 'text',
+        text: `로또 번호: ${numbers.join(', ')}`,
+        link: {
+          mobileWebUrl: window.location.href,
+          webUrl: window.location.href,
+        },
+      });
+    }
+  };
+
   return (
     <div className="container">
       <Head>
@@ -244,8 +267,11 @@ export default function Home() {
                     </span>
                   ))}
                 </div>
-                <button onClick={() => copyToClipboard(lottoNumbers)} className="copy-button">
+                <button onClick={() => copyToClipboard(lottoNumbers)} className="action-button">
                   복사하기
+                </button>
+                <button onClick={() => shareToKakao(lottoNumbers)} className="action-button">
+                  카카오톡 공유
                 </button>
                 {copySuccess && <p className="copy-message">{copySuccess}</p>}
               </div>
@@ -265,8 +291,11 @@ export default function Home() {
                     </span>
                   ))}
                 </div>
-                <button onClick={() => copyToClipboard(finalNumbers)} className="copy-button">
+                <button onClick={() => copyToClipboard(finalNumbers)} className="action-button">
                   복사하기
+                </button>
+                <button onClick={() => shareToKakao(finalNumbers)} className="action-button">
+                  카카오톡 공유
                 </button>
                 {copySuccess && <p className="copy-message">{copySuccess}</p>}
               </div>
@@ -349,7 +378,7 @@ export default function Home() {
           border-radius: 5px;
           cursor: pointer;
           transition: background-color 0.3s;
-          width: 100%; /* 버���의 가로 크기를 동일하게 설정 */
+          width: 100%; /* 버튼의 가로 크기를 동일하게 설정 */
           margin-bottom: 1rem; /* 버튼 간격을 띄우기 위해 아래쪽 여백 추가 */
         }
 
@@ -381,7 +410,7 @@ export default function Home() {
           100% { opacity: 0; }
         }
 
-        .copy-button {
+        .action-button {
           margin-top: 1rem;
           padding: 0.5rem 1rem;
           font-size: 1rem;
@@ -391,9 +420,10 @@ export default function Home() {
           border-radius: 5px;
           cursor: pointer;
           transition: background-color 0.3s;
+          margin-right: 0.5rem;
         }
 
-        .copy-button:hover {
+        .action-button:hover {
           background-color: #45a049;
         }
 
