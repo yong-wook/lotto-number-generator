@@ -88,7 +88,7 @@ export default function Home() {
       console.log("추천 번호 데이터:", data); // 데이터 확인
       setFinalNumbers(data.finalNumbers); // 추천 번호를 배열로 설정
     } catch (error) {
-      console.error('추천 번호 가져오기 실패:', error);
+      console.error('추천 번호 가져오기 ���패:', error);
     }
   };
 
@@ -120,18 +120,9 @@ export default function Home() {
     });
   };
 
-  // Kakao SDK 초기화
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (!window.Kakao.isInitialized()) {
-        window.Kakao.init(process.env.NEXT_PUBLIC_KAKAO_APP_KEY);
-      }
-    }
-  }, []);
-
   // 카카오톡 공유 함수
   const shareToKakao = (numbers) => {
-    if (typeof window !== 'undefined' && window.Kakao) {
+    if (typeof window !== 'undefined' && window.Kakao && window.Kakao.Link) {
       window.Kakao.Link.sendDefault({
         objectType: 'text',
         text: `로또 번호: ${numbers.join(', ')}`,
@@ -140,6 +131,8 @@ export default function Home() {
           webUrl: window.location.href,
         },
       });
+    } else {
+      console.error('Kakao SDK is not loaded');
     }
   };
 
@@ -267,12 +260,14 @@ export default function Home() {
                     </span>
                   ))}
                 </div>
-                <button onClick={() => copyToClipboard(lottoNumbers)} className="action-button">
-                  복사하기
-                </button>
-                <button onClick={() => shareToKakao(lottoNumbers)} className="action-button">
-                  카카오톡 공유
-                </button>
+                <div className="action-buttons">
+                  <button onClick={() => copyToClipboard(lottoNumbers)} className="action-button">
+                    복사하기
+                  </button>
+                  <button onClick={() => shareToKakao(lottoNumbers)} className="kakao-share-button">
+                    <img src="/kakao-talk-icon.svg" alt="카카오톡 공유" className="kakao-icon" />
+                  </button>
+                </div>
                 {copySuccess && <p className="copy-message">{copySuccess}</p>}
               </div>
             )}
@@ -291,12 +286,14 @@ export default function Home() {
                     </span>
                   ))}
                 </div>
-                <button onClick={() => copyToClipboard(finalNumbers)} className="action-button">
-                  복사하기
-                </button>
-                <button onClick={() => shareToKakao(finalNumbers)} className="action-button">
-                  카카오톡 공유
-                </button>
+                <div className="action-buttons">
+                  <button onClick={() => copyToClipboard(finalNumbers)} className="action-button">
+                    복사하기
+                  </button>
+                  <button onClick={() => shareToKakao(finalNumbers)} className="kakao-share-button">
+                    <img src="/kakao-talk-icon.svg" alt="카카오톡 공유" className="kakao-icon" />
+                  </button>
+                </div>
                 {copySuccess && <p className="copy-message">{copySuccess}</p>}
               </div>
             )}
@@ -410,8 +407,13 @@ export default function Home() {
           100% { opacity: 0; }
         }
 
-        .action-button {
+        .action-buttons {
+          display: flex;
+          gap: 0.5rem;
           margin-top: 1rem;
+        }
+
+        .action-button {
           padding: 0.5rem 1rem;
           font-size: 1rem;
           background-color: #4CAF50;
@@ -420,11 +422,31 @@ export default function Home() {
           border-radius: 5px;
           cursor: pointer;
           transition: background-color 0.3s;
-          margin-right: 0.5rem;
         }
 
         .action-button:hover {
           background-color: #45a049;
+        }
+
+        .kakao-share-button {
+          padding: 0.5rem;
+          background-color: #FEE500;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: background-color 0.3s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .kakao-share-button:hover {
+          background-color: #FDD835;
+        }
+
+        .kakao-icon {
+          width: 24px;
+          height: 24px;
         }
 
         .copy-message {
