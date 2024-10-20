@@ -1,73 +1,66 @@
 import axios from 'axios';
-import { parse, unparse } from 'papaparse'; // CSV 파싱 및 직렬화를 위한 라이브러리 추가
-import fs from 'fs'; // 파일 시스템 모듈 추가
-import path from 'path'; // 경로 모듈 추가
+import { createClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '../../lib/supabase';
 
-const fetchCSVData = () => {
-  const filePath = path.join(process.cwd(), 'public', 'lotto_results.csv'); // CSV 파일 경로
-  const fileContent = fs.readFileSync(filePath, 'utf8'); // CSV 파일 읽기
-  const parsedData = parse(fileContent, { header: true });  
-  return parsedData.data; // 파싱된 데이터 반환
-};
-
-const appendDataToCSV = (data) => {
-    // 데이터 형식 확인
-    const { drwNo, drwNoDate, drwtNo1, drwtNo2, drwtNo3, drwtNo4, drwtNo5, drwtNo6, bnusNo } = data;
-
-    // 모든 필드가 존재하는지 확인
-    if (drwNo && drwNoDate && drwtNo1 && drwtNo2 && drwtNo3 && drwtNo4 && drwtNo5 && drwtNo6 && bnusNo) {
-        const numbers = `${drwtNo1}, ${drwtNo2}, ${drwtNo3}, ${drwtNo4}, ${drwtNo5}, ${drwtNo6}`;
-        const newRow = `${drwNo},"${numbers}",${drwNoDate},${bnusNo}\n`;
-
-        // CSV 파일에 추가
-        fs.appendFileSync(path.join(process.cwd(), 'public', 'lotto_results.csv'), newRow, 'utf8');
-        console.log('CSV에 데이터 추가:', newRow);
-    } else {
-        console.log('유효하지 않은 데이터 형식:', data);
-    }
-};
+// Supabase 클라이언트 생성
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY // 주의: 이 키는 절대 클라이언트 측에 노출되면 안 됩니다!
+)
 
 const checkAndFetchMissingDraws = async (recentDrawNo) => {
-  console.log('checkAndFetchMissingDraws 시작:', recentDrawNo); // 시작 로그 추가
-  const csvData = fetchCSVData();
+  console.log('checkAndFetchMissingDraws 시작:', recentDrawNo);
+
+  // Supabase에서 최신 회차 번호 가져오기
+  const { data: latestDraw, error: fetchError } = await supabaseAdmin
+    .from('lottoResults')
+    .select('drwNo')
+    .order('drwNo', { ascending: false })
+    .limit(1);
+
+  if (fetchError) {
+    console.error('Supabase 데이터 가져오기 오류:', fetchError);
+    return false; // 오류 발생 시 false 반환
+  }
+
+  const maxDrawNo = latestDraw.length > 0 ? latestDraw[0].drwNo : 0;
   
-  // 유효한 숫자만 필터링하여 최대 회차 번호 찾기
-  const validDrawNos = csvData.map(row => parseInt(row.draw_no)).filter(num => !isNaN(num)); // 'drwNo'를 'draw_no'로 변경
-  const maxDrawNo = validDrawNos.length > 0 ? Math.max(...validDrawNos) : 0; // 유효한 값이 없으면 0으로 설정
-  
-  console.log('CSV에서 가장 큰 회차 번호:', maxDrawNo); // 최대 회차 번호 로그
-  console.log('최근 회차 번호:', recentDrawNo); // 최근 회차 번호 로그
+  console.log('Supabase에서 가장 큰 회차 번호:', maxDrawNo);
+  console.log('최근 회차 번호:', recentDrawNo);
 
   if (maxDrawNo < recentDrawNo) {
-    console.log(`최근 회차 번호(${recentDrawNo})가 CSV의 최대 회차 번호(${maxDrawNo})보다 큽니다. 비어있는 회차 정보 가져오기...`);
+    console.log(`최근 회차 번호(${recentDrawNo})가 Supabase의 최대 회차 번호(${maxDrawNo})보다 큽니다. 비어있는 회차 정보 가져오기...`);
     
-    // 특정 회차의 당첨 정보 가져오기
-    const response = await axios.get(`https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${maxDrawNo + 1}`);
-    const data = response.data;
+    for (let drawNo = maxDrawNo + 1; drawNo <= recentDrawNo; drawNo++) {
+      const response = await axios.get(`https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${drawNo}`);
+      const data = response.data;
 
-    if (data.returnValue === "fail") {
-        console.log('당첨 정보 가져오기 실패');
-        // 임시 데이터 사용
-        const tempData = {
-            returnValue: 'success',
-            drwNo: '1000',
-            drwNoDate: '2023-05-20',
-            drwtNo1: '1',
-            drwtNo2: '15',
-            drwtNo3: '23',
-            drwtNo4: '34',
-            drwtNo5: '41',
-            drwtNo6: '45',
-            bnusNo: '10'
-        };
-        appendDataToCSV(tempData);
-    } else {
-        console.log('API 응답:', data); // API 응답 로그
-        appendDataToCSV(data);
+      if (data.returnValue === "success") {
+        console.log('API 응답:', data);
+        
+        // Supabase에 데이터 추가
+        const { error: insertError } = await supabaseAdmin
+          .from('lottoResults')
+          .insert({
+            drwNo: data.drwNo,
+            drwNoDate: data.drwNoDate,
+            numbers: `${data.drwtNo1},${data.drwtNo2},${data.drwtNo3},${data.drwtNo4},${data.drwtNo5},${data.drwtNo6}`,
+            bonus: data.bnusNo
+          });
+
+        if (insertError) {
+          console.error('Supabase 데이터 삽입 오류:', insertError);
+        }
+      } else {
+        console.log(`회차 ${drawNo}의 당첨 정보 가져오기 실패`);
+      }
     }
   } else {
-    console.log(`최근 회차 번호(${recentDrawNo})가 CSV의 최대 회차 번호(${maxDrawNo})보다 작거나 같습니다. 업데이트 필요 없음.`);
+    console.log(`최근 회차 번호(${recentDrawNo})가 Supabase의 최대 회차 번호(${maxDrawNo})보다 작거나 같습니다. 업데이트 필요 없음.`);
+    return false; // 업데이트가 필요 없는 경우 false 반환
   }
+
+  return true; // 업데이트가 필요한 경우 true 반환
 };
 
 export default async function handler(req, res) {
@@ -98,7 +91,7 @@ export default async function handler(req, res) {
     const drawDateRegex = /id="drwNoDate"[^>]*>\(?([\d-]+)[^<]*\)?<\/span>/;
     const drawDateMatch = html.match(drawDateRegex);
     if (!drawDateMatch) {
-      throw new Error('추첨일을 찾지 못했습니다.');
+      throw new Error('추첨일을 찾 못했습니다.');
     }
     const drawDate = drawDateMatch[1];
 
@@ -129,28 +122,62 @@ export default async function handler(req, res) {
 
     console.log('파싱된 데이터:', result);
 
-    // CSV 파일과 비교
-    await checkAndFetchMissingDraws(parseInt(drawNumber));
+    // Supabase와 비교 및 업데이트
+    const needsUpdate = await checkAndFetchMissingDraws(parseInt(drawNumber));
+
+    if (needsUpdate) {
+      // Supabase에 최신 데이터 저장 또는 업데이트
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('lottoResults')
+          .upsert({
+            drwNo: result.drwNo,
+            drwNoDate: result.drwNoDate,
+            numbers: `${result.drwtNo1},${result.drwtNo2},${result.drwtNo3},${result.drwtNo4},${result.drwtNo5},${result.drwtNo6}`,
+            bonus: result.bnusNo
+          }, { onConflict: 'drwNo' });
+
+        if (error) {
+          console.error('Supabase 데이터 업데이트 오류:', error);
+        } else {
+          console.log('Supabase 데이터 업데이트 성공');
+        }
+      } catch (error) {
+        console.error('Supabase 작업 중 예외 발생:', error);
+      }
+    } else {
+      console.log('데이터베이스 업데이트가 필요하지 않습니다.');
+    }
 
     res.status(200).json(result);
   } catch (error) {
     console.error('파싱 오류:', error.message);
     
-    // 임시 하드코딩된 데이터
-    const fallbackData = {
-      returnValue: 'success',
-      drwNo: '1000',
-      drwNoDate: '2023-05-20',
-      drwtNo1: '1',
-      drwtNo2: '15',
-      drwtNo3: '23',
-      drwtNo4: '34',
-      drwtNo5: '41',
-      drwtNo6: '45',
-      bnusNo: '10'
-    };
+    // 오류 발생 시 Supabase에서 최신 데이터 가져오기
+    const { data: latestData, error: fetchError } = await supabase
+      .from('lottoResults')
+      .select('*')
+      .order('drwNo', { ascending: false })
+      .limit(1);
 
-    console.log('임시 데이터 사용:', fallbackData);
-    res.status(200).json(fallbackData);
+    if (fetchError) {
+      console.error('Supabase 데이터 가져오기 오류:', fetchError);
+      res.status(500).json({ error: 'Internal Server Error' });
+    } else if (latestData && latestData.length > 0) {
+      const fallbackData = {
+        returnValue: 'success',
+        drwNo: latestData[0].drwNo,
+        drwNoDate: latestData[0].drwNoDate,
+        ...latestData[0].numbers.split(',').reduce((acc, num, index) => {
+          acc[`drwtNo${index + 1}`] = num;
+          return acc;
+        }, {}),
+        bnusNo: latestData[0].bonus
+      };
+      console.log('Supabase에서 가져온 최신 데이터 사용:', fallbackData);
+      res.status(200).json(fallbackData);
+    } else {
+      res.status(500).json({ error: 'No data available' });
+    }
   }
 }

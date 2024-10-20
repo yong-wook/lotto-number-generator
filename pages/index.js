@@ -21,16 +21,21 @@ export default function Home() {
   const numbersRef = useRef(null);
 
   const fetchCurrentLottoNumber = useCallback(async () => {
-    setLoadingRecent(true); // 최근 당첨번호 로딩 시작
+    setLoadingRecent(true);
     try {
       const response = await fetch('/api/lotto');
+      if (!response.ok) {
+        throw new Error('서버 응답 오류');
+      }
       const data = await response.json();
       setRecentWinningNumbers(data);
       setCurrentDrawNo(data.drwNo);
     } catch (error) {
       console.error('현재 로또 번호 가져오기 실패:', error);
+      // 사용자에게 오류 메시지 표시
+      setRecentWinningNumbers(null);
     } finally {
-      setLoadingRecent(false); // 로딩 상태 해제
+      setLoadingRecent(false);
     }
   }, []);
 
