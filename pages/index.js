@@ -15,7 +15,7 @@ export default function Home() {
   const [loadingPast, setLoadingPast] = useState(false);
   const [copySuccess, setCopySuccess] = useState('');
   const [savedNumbers, setSavedNumbers] = useState([]);
-  const [showSavedNumbers, setShowSavedNumbers] = useState(false);
+  const [showSavedNumbers, setShowSavedNumbers] = useState(true); // 초기 상태를 true로 설정
   const numbersRef = useRef(null);
   
   // 마지막으로 눌린 버튼을 추적하는 상태 추가
@@ -201,6 +201,41 @@ export default function Home() {
       <main>
         <h1 className="title">Use Wook`s 로또</h1>
         
+        {/* 번호 생성기 영역 추가 */}
+        <div className="generator">
+          
+          <div>
+            <label htmlFor="excludeNumbers">제외할 번호:</label>
+            <input
+              type="text"
+              id="excludeNumbers"
+              value={excludeNumbers}
+              onChange={(e) => setExcludeNumbers(e.target.value)}
+              placeholder="예: 1, 2, 3"
+              className="input-field" // 클래스 추가
+            />
+          </div>
+          <div>
+            <label htmlFor="includeNumbers">포함할 번호:</label>
+            <input
+              type="text"
+              id="includeNumbers"
+              value={includeNumbers}
+              onChange={(e) => setIncludeNumbers(e.target.value)}
+              placeholder="예: 4, 5, 6"
+              className="input-field" // 클래스 추가
+            />
+          </div>
+          <div className="action-buttons">
+            <button onClick={generateLottoNumbers} className="generate-button">
+              생성하기
+            </button>
+            <button onClick={fetchRecommendedNumbers} className="generate-button">
+              AI 추천
+            </button>
+          </div>
+        </div>
+
         {/* 생성된 번호와 추천 번호를 하나의 영역에서 보여줌 */}
         {(lottoNumbers.length > 0 || finalNumbers.length > 0) && (
           <div className="result animated" key={animationKey}>
@@ -211,7 +246,7 @@ export default function Home() {
                   <span
                     key={index}
                     className="number"
-                    style={{backgroundColor: getBackgroundColor(number)}}
+                    style={{ backgroundColor: getBackgroundColor(number) }}
                   >
                     {number}
                   </span>
@@ -221,7 +256,7 @@ export default function Home() {
                   <span
                     key={index}
                     className="number"
-                    style={{backgroundColor: getBackgroundColor(number)}}
+                    style={{ backgroundColor: getBackgroundColor(number) }}
                   >
                     {number}
                   </span>
@@ -230,7 +265,7 @@ export default function Home() {
             </div>
             <div className="action-buttons">
               <button onClick={saveLottoNumbers} className="action-button">저장하기</button>
-              <button onClick={handleRegenerate} className="action-button">다시 생성하기</button> {/* 생성하기 버튼 추가 */}
+              <button onClick={handleRegenerate} className="action-button">다시 생성하기</button>
             </div>
           </div>
         )}
@@ -241,24 +276,28 @@ export default function Home() {
         </button>
 
         {/* 저장된 번호 영역 추가 */}
-        {showSavedNumbers && savedNumbers.length > 0 && (
+        {showSavedNumbers && (
           <div className="saved-numbers">
             <h3>저장된 번호</h3>
-            {savedNumbers.map((numbers, index) => (
-              <div key={index} className="numbers">
-                <h4>세트 {index + 1}</h4> {/* 각 세트에 대한 제목 추가 */}
-                {numbers.map((number, idx) => (
-                  <span
-                    key={idx}
-                    className="number"
-                    style={{backgroundColor: getBackgroundColor(number)}}
-                  >
-                    {number}
-                  </span>
-                ))}
-                <button onClick={() => deleteSavedNumbers(index)} className="delete-button">X</button> {/* 삭제 버튼 추가 */}
-              </div>
-            ))}
+            {savedNumbers.length > 0 ? (
+              savedNumbers.map((numbers, index) => (
+                <div key={index} className="numbers">
+                  <h4>세트 {index + 1}</h4>
+                  {numbers.map((number, idx) => (
+                    <span
+                      key={idx}
+                      className="number"
+                      style={{ backgroundColor: getBackgroundColor(number) }}
+                    >
+                      {number}
+                    </span>
+                  ))}
+                  <button onClick={() => deleteSavedNumbers(index)} className="delete-button">X</button>
+                </div>
+              ))
+            ) : (
+              <p>저장된 번호가 없습니다.</p> // 저장된 번호가 없을 경우 메시지 표시
+            )}
             <div className="action-buttons">
               <button onClick={() => copyToClipboard(savedNumbers)} className="action-button">모든 번호 복사하기</button>
               <button onClick={() => shareToKakao(savedNumbers)} className="kakao-share-button">
@@ -282,14 +321,14 @@ export default function Home() {
                       <span
                         key={num}
                         className="number"
-                        style={{backgroundColor: getBackgroundColor(recentWinningNumbers[`drwtNo${num}`])}}
+                        style={{ backgroundColor: getBackgroundColor(recentWinningNumbers[`drwtNo${num}`]) }}
                       >
                         {recentWinningNumbers[`drwtNo${num}`]}
                       </span>
                     ))}
                     <span
                       className="number bonus"
-                      style={{backgroundColor: getBackgroundColor(recentWinningNumbers.bnusNo), border: '2px solid #ffcc00', display: 'flex', flexDirection: 'column', alignItems: 'center'}}
+                      style={{ backgroundColor: getBackgroundColor(recentWinningNumbers.bnusNo), border: '2px solid #ffcc00', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                     >
                       <span style={{ fontSize: '0.6rem', color: 'black' }}>bonus</span>
                       {recentWinningNumbers.bnusNo}
@@ -302,7 +341,7 @@ export default function Home() {
             </div>
             
             <button onClick={togglePastNumbers} className="past-numbers-button">
-              {showPastNumbers ? '지 당첨번호 숨기기' : '지 당첨번호 조회'}
+              {showPastNumbers ? '지난 당첨번호 숨기기' : '지난 당첨번호 조회'}
             </button>
             
             {loadingPast ? (
@@ -336,51 +375,18 @@ export default function Home() {
                 null)
             )}
           </div>
-
-          <div className="right-column">
-            <div className="generator">
-              <h3>번호 생성기</h3>
-              <div>
-                <label htmlFor="excludeNumbers">제외할 번호:</label>
-                <input
-                  type="text"
-                  id="excludeNumbers"
-                  value={excludeNumbers}
-                  onChange={(e) => setExcludeNumbers(e.target.value)}
-                  placeholder="예: 1, 2, 3"
-                />
-              </div>
-              <div>
-                <label htmlFor="includeNumbers">포함할 번호:</label>
-                <input
-                  type="text"
-                  id="includeNumbers"
-                  value={includeNumbers}
-                  onChange={(e) => setIncludeNumbers(e.target.value)}
-                  placeholder="예: 4, 5, 6"
-                />
-              </div>
-              <button onClick={generateLottoNumbers} className="generate-button">
-                생성하기
-              </button>
-              <button onClick={fetchRecommendedNumbers} className="generate-button">
-                AI추천
-              </button>
-            </div>
-            
-            
-          </div>
         </div>
       </main>
 
       <style jsx>{`
         .container {
           min-height: 100vh;
-          padding: 0 0.5rem;
+          padding: 0 1rem;
           display: flex;
           flex-direction: column;
           justify-content: flex-start;
           align-items: center;
+          background-color: #f9f9f9; /* 배경색 추가 */
         }
 
         main {
@@ -401,30 +407,20 @@ export default function Home() {
           text-align: center;
         }
 
-        .content {
-          display: flex;
-          width: 100%;
-          gap: 2rem;
-        }
-
-        .left-column, .right-column {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-
-        .recent-numbers, .past-numbers, .generator, .result {
-          background-color: rgba(255, 255, 255, 0.8);
+        .result {
+          background-color: rgba(255, 255, 255, 0.9);
           padding: 1rem;
-          border-radius: 5px;
+          border-radius: 8px;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          margin-bottom: 1rem; /* 아래쪽 여백 추가 */
+          width: 100%; /* 너비를 100%로 설정 */
         }
 
         .numbers {
           display: flex;
           gap: 0.5rem;
           flex-wrap: wrap;
+          justify-content: center; /* 중앙 정렬 */
         }
 
         .number {
@@ -438,7 +434,14 @@ export default function Home() {
           color: white;
         }
 
-        .past-numbers-button, .generate-button {
+        .action-buttons {
+          display: flex;
+          justify-content: center; /* 중앙 정렬 */
+          gap: 1rem; /* 튼 간격 조정 */
+          margin-top: 1rem; /* 위쪽 여백 추가 */
+        }
+
+        .action-button {
           padding: 0.5rem 1rem;
           font-size: 1rem;
           background-color: #4CAF50;
@@ -447,20 +450,44 @@ export default function Home() {
           border-radius: 5px;
           cursor: pointer;
           transition: background-color 0.3s;
-          width: 100%; /* 버튼의 가로 크기를 동일하게 설정 */
-          margin-bottom: 1rem; /* 버튼 간격을 띄우기 위해 아쪽 여백 추가 */
         }
 
-        .past-numbers-button:hover, .generate-button:hover {
+        .action-button:hover {
           background-color: #45a049;
         }
 
-        .generator input {
-          width: 100%;
-          padding: 0.5rem;
-          margin: 0.5rem 0;
-          border: 1px solid #ccc;
-          border-radius: 3px;
+        .saved-numbers {
+          margin-top: 2rem;
+          background-color: rgba(255, 255, 255, 0.9);
+          padding: 1rem;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .delete-button {
+          margin-left: 10px;
+          background-color: red;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          padding: 0 5px;
+        }
+
+        .past-numbers-button {
+          padding: 0.5rem 1rem;
+          font-size: 1rem;
+          background-color: #4CAF50; /* 다른 버튼들과 동일한 색상 */
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: background-color 0.3s;
+          margin-top: 1rem; /* 위쪽 여백 추가 */
+        }
+
+        .past-numbers-button:hover {
+          background-color: #45a049; /* 호버 시 색상 변경 */
         }
 
         @media (max-width: 768px) {
@@ -477,27 +504,6 @@ export default function Home() {
           0% { opacity: 0; }
           50% { opacity: 1; }
           100% { opacity: 0; }
-        }
-
-        .action-buttons {
-          display: flex;
-          gap: 0.5rem;
-          margin-top: 1rem;
-        }
-
-        .action-button {
-          padding: 0.5rem 1rem;
-          font-size: 1rem;
-          background-color: #4CAF50;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-          transition: background-color 0.3s;
-        }
-
-        .action-button:hover {
-          background-color: #45a049;
         }
 
         .kakao-share-button {
@@ -527,21 +533,49 @@ export default function Home() {
           font-weight: bold;
         }
 
-        .saved-numbers {
-          margin-top: 2rem;
-          background-color: rgba(255, 255, 255, 0.8);
+        .generator {
+          margin-bottom: 2rem; /* 아래쪽 여백 추가 */
           padding: 1rem;
-          border-radius: 5px;
+          background-color: rgba(255, 255, 255, 0.9);
+          border-radius: 8px;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        .delete-button {
-          margin-left: 10px;
-          background-color: red;
+
+        .action-buttons {
+          display: flex;
+          justify-content: center; /* 중앙 정렬 */
+          gap: 1rem; /* 버튼 간격 조정 */
+          margin-top: 1rem; /* 위쪽 여백 추가 */
+        }
+
+        .generate-button {
+          padding: 0.5rem 1rem;
+          font-size: 1rem;
+          background-color: #4CAF50;
           color: white;
           border: none;
           border-radius: 5px;
           cursor: pointer;
-          padding: 0 5px;
+          transition: background-color 0.3s;
+        }
+
+        .generate-button:hover {
+          background-color: #45a049;
+        }
+
+        .input-field {
+          width: 100%; /* 너비를 100%로 설정 */
+          padding: 0.5rem; /* 패딩 추가 */
+          margin-top: 0.5rem; /* 위쪽 여백 추가 */
+          border: 2px solid #4CAF50; /* 테두리 색상 설정 */
+          border-radius: 5px; /* 모서리 둥글게 */
+          font-size: 1rem; /* 글자 크기 설정 */
+          transition: border-color 0.3s; /* 테두리 색상 변화 애니메이션 */
+        }
+
+        .input-field:focus {
+          border-color: #45a049; /* 포커스 시 테두리 색상 변경 */
+          outline: none; /* 기본 아웃라인 제거 */
         }
       `}</style>
     </div>
