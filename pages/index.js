@@ -15,7 +15,8 @@ export default function Home() {
   const [loadingPast, setLoadingPast] = useState(false);
   const [copySuccess, setCopySuccess] = useState('');
   const [savedNumbers, setSavedNumbers] = useState([]);
-  const [showSavedNumbers, setShowSavedNumbers] = useState(true); // 초기 상태를 true로 설정
+  const [showSavedNumbers, setShowSavedNumbers] = useState(true);
+  const [showGenerator, setShowGenerator] = useState(true); // 생성기 영역 상태 추가
   const numbersRef = useRef(null);
   
   // 마지막으로 눌린 버튼을 추적하는 상태 추가
@@ -79,6 +80,7 @@ export default function Home() {
     setLottoNumbers(numbers);
     setAnimationKey(prev => prev + 1);
     setLastButtonPressed('generate'); // 생성하기 버튼 눌림
+    setShowGenerator(false); // 생성기 숨기기
   }, [excludeNumbers, includeNumbers]);
 
   // AI 추천 번호 가져오기
@@ -95,6 +97,7 @@ export default function Home() {
       console.error('추천 번호 가져오기 실패:', error);
     }
     setLastButtonPressed('recommend'); // AI 추천 버튼 눌림
+    setShowGenerator(false); // 생성기 숨기기
   };
 
   const saveLottoNumbers = () => {
@@ -201,40 +204,46 @@ export default function Home() {
       <main>
         <h1 className="title">Use Wook`s 로또</h1>
         
+        {/* 번호 생성기 숨기기 버튼 추가 */}
+        <button onClick={() => setShowGenerator(!showGenerator)} className="action-button">
+          {showGenerator ? '번호 생성기 숨기기' : '번호 생성기 보기'}
+        </button>
+
         {/* 번호 생성기 영역 추가 */}
-        <div className="generator">
-          
-          <div>
-            <label htmlFor="excludeNumbers">제외할 번호:</label>
-            <input
-              type="text"
-              id="excludeNumbers"
-              value={excludeNumbers}
-              onChange={(e) => setExcludeNumbers(e.target.value)}
-              placeholder="예: 1, 2, 3"
-              className="input-field" // 클래스 추가
-            />
+        {showGenerator && (
+          <div className="generator">
+            <div>
+              <label htmlFor="excludeNumbers">제외할 번호:</label>
+              <input
+                type="text"
+                id="excludeNumbers"
+                value={excludeNumbers}
+                onChange={(e) => setExcludeNumbers(e.target.value)}
+                placeholder="예: 1, 2, 3"
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label htmlFor="includeNumbers">포함할 번호:</label>
+              <input
+                type="text"
+                id="includeNumbers"
+                value={includeNumbers}
+                onChange={(e) => setIncludeNumbers(e.target.value)}
+                placeholder="예: 4, 5, 6"
+                className="input-field"
+              />
+            </div>
+            <div className="action-buttons">
+              <button onClick={generateLottoNumbers} className="generate-button">
+                생성하기
+              </button>
+              <button onClick={fetchRecommendedNumbers} className="generate-button">
+                AI 추천
+              </button>
+            </div>
           </div>
-          <div>
-            <label htmlFor="includeNumbers">포함할 번호:</label>
-            <input
-              type="text"
-              id="includeNumbers"
-              value={includeNumbers}
-              onChange={(e) => setIncludeNumbers(e.target.value)}
-              placeholder="예: 4, 5, 6"
-              className="input-field" // 클래스 추가
-            />
-          </div>
-          <div className="action-buttons">
-            <button onClick={generateLottoNumbers} className="generate-button">
-              생성하기
-            </button>
-            <button onClick={fetchRecommendedNumbers} className="generate-button">
-              AI 추천
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* 생성된 번호와 추천 번호를 하나의 영역에서 보여줌 */}
         {(lottoNumbers.length > 0 || finalNumbers.length > 0) && (
@@ -296,7 +305,7 @@ export default function Home() {
                 </div>
               ))
             ) : (
-              <p>저장된 번호가 없습니다.</p> // 저장된 번호가 없을 경우 메시지 표시
+              <p>저장된 번호가 없습니다.</p>
             )}
             <div className="action-buttons">
               <button onClick={() => copyToClipboard(savedNumbers)} className="action-button">모든 번호 복사하기</button>
