@@ -242,7 +242,7 @@ export default function Home() {
             </div>
             <div className="action-buttons">
               <button onClick={generateLottoNumbers} className="generate-button">
-                생��하기
+                생성하기
               </button>
               <button onClick={fetchRecommendedNumbers} className="generate-button">
                 AI 추천
