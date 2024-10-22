@@ -4,21 +4,22 @@ import Head from 'next/head';
 export default function Home() {
   const [recentWinningNumbers, setRecentWinningNumbers] = useState(null);
   const [currentDrawNo, setCurrentDrawNo] = useState(1141);
-  const [pastWinningNumbers, setPastWinningNumbers] = useState([]); // 과거 당첨번호 상태
-  const [showPastNumbers, setShowPastNumbers] = useState(false); // 과거 당첨번호 표시 여부
+  const [pastWinningNumbers, setPastWinningNumbers] = useState([]);
+  const [showPastNumbers, setShowPastNumbers] = useState(false);
   const [excludeNumbers, setExcludeNumbers] = useState('');
   const [includeNumbers, setIncludeNumbers] = useState('');
   const [lottoNumbers, setLottoNumbers] = useState([]);
-  const [finalNumbers, setFinalNumbers] = useState([]); // 변수명 변경
+  const [finalNumbers, setFinalNumbers] = useState([]);
   const [animationKey, setAnimationKey] = useState(0);
-  const [loadingRecent, setLoadingRecent] = useState(false); // 최근 당첨번호 로딩 상태
-  const [loadingPast, setLoadingPast] = useState(false); // 과거 당첨번호 로딩 상태
-
-  // 복사 성공 메시지를 위한 새로운 상태
+  const [loadingRecent, setLoadingRecent] = useState(false);
+  const [loadingPast, setLoadingPast] = useState(false);
   const [copySuccess, setCopySuccess] = useState('');
-  
-  // 번호를 표시하는 div에 대한 참조 생성
+  const [savedNumbers, setSavedNumbers] = useState([]);
+  const [showSavedNumbers, setShowSavedNumbers] = useState(false);
   const numbersRef = useRef(null);
+  
+  // 마지막으로 눌린 버튼을 추적하는 상태 추가
+  const [lastButtonPressed, setLastButtonPressed] = useState(null);
 
   const fetchCurrentLottoNumber = useCallback(async () => {
     setLoadingRecent(true);
@@ -32,7 +33,6 @@ export default function Home() {
       setCurrentDrawNo(data.drwNo);
     } catch (error) {
       console.error('현재 로또 번호 가져오기 실패:', error);
-      // 사용자에게 오류 메시지 표시
       setRecentWinningNumbers(null);
     } finally {
       setLoadingRecent(false);
@@ -40,34 +40,31 @@ export default function Home() {
   }, []);
 
   const fetchPastWinningNumbers = async () => {
-    setLoadingPast(true); // 로딩 시작
+    setLoadingPast(true);
     try {
-      const response = await fetch(`/api/past-lotto?currentDrawNo=${currentDrawNo}`); // 동적 회차번호 사용
-      const data = await response.json(); // JSON으로 변환
-      setPastWinningNumbers(data); // 과거 당첨번호 업데이트
+      const response = await fetch(`/api/past-lotto?currentDrawNo=${currentDrawNo}`);
+      const data = await response.json();
+      setPastWinningNumbers(data);
     } catch (error) {
       console.error("Error fetching past winning numbers:", error);
     } finally {
-      setLoadingPast(false); // 로딩 상태 해제
+      setLoadingPast(false);
     }
   };
 
   const togglePastNumbers = useCallback(() => {
     if (!showPastNumbers) {
-      fetchPastWinningNumbers(); // API 호출
+      fetchPastWinningNumbers();
     }
-    setShowPastNumbers(!showPastNumbers); // 상태 토글
+    setShowPastNumbers(!showPastNumbers);
   }, [showPastNumbers]);
 
   useEffect(() => {
     fetchCurrentLottoNumber();
   }, [fetchCurrentLottoNumber]);
 
+  // 로또 번호 생성 함수
   const generateLottoNumbers = useCallback(() => {
-    // 기존 번호 초기화
-    setLottoNumbers([]); // 기존 생성된 번호 삭제
-    setFinalNumbers([]); // 추천 번호도 초기화
-
     const excluded = excludeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
     const included = includeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
     
@@ -79,10 +76,12 @@ export default function Home() {
       }
     }
     numbers.sort((a, b) => a - b);
-    setLottoNumbers(numbers); // 새로운 번호 설정
-    setAnimationKey(prev => prev + 1); // 애니메이션 키 증가
+    setLottoNumbers(numbers);
+    setAnimationKey(prev => prev + 1);
+    setLastButtonPressed('generate'); // 생성하기 버튼 눌림
   }, [excludeNumbers, includeNumbers]);
 
+  // AI 추천 번호 가져오기
   const fetchRecommendedNumbers = async () => {
     setFinalNumbers([]); // 기존 추천 번호 삭제
     setLottoNumbers([]); // 기존 생성된 번호 삭제
@@ -90,19 +89,32 @@ export default function Home() {
     try {
       const response = await fetch('/api/recommend-lotto');
       const data = await response.json();
-      console.log("추천 번호 데이터:", data); // 데이터 확인
+      console.log("추천 번호 데이터:", data);
       setFinalNumbers(data.finalNumbers); // 추천 번호를 배열로 설정
     } catch (error) {
-      console.error('추천 번호 가져오기 패:', error);
+      console.error('추천 번호 가져오기 실패:', error);
+    }
+    setLastButtonPressed('recommend'); // AI 추천 버튼 눌림
+  };
+
+  const saveLottoNumbers = () => {
+    const numbersToSave = lottoNumbers.length > 0 ? lottoNumbers : finalNumbers;
+    if (savedNumbers.length < 5 && numbersToSave.length > 0) {
+        setSavedNumbers(prev => {
+            const newSavedNumbers = [...prev, numbersToSave];
+            console.log('새로 저장된 번호:', newSavedNumbers);
+            return newSavedNumbers;
+        });
+    } else {
+        alert('최대 5개까지 저장할 수 있습니다.');
     }
   };
 
-  useEffect(() => {
-    if (lottoNumbers.length > 0) {
-      setAnimationKey(prev => prev + 1); // 애니메이션 키 증가
-    }
-  }, [lottoNumbers]);
+  const deleteSavedNumbers = (index) => {
+    setSavedNumbers(prev => prev.filter((_, i) => i !== index));
+  };
 
+  // 배경 색상 결정 함수
   const getBackgroundColor = (number) => {
     const num = parseInt(number);
     if (num >= 1 && num <= 10) return '#fbc400';
@@ -113,9 +125,9 @@ export default function Home() {
     return '#ffffff';
   };
 
-  // 복사 함수 추가
+  // 클립보드에 복사하는 함수
   const copyToClipboard = (numbers) => {
-    const textToCopy = numbers.join(', ');
+    const textToCopy = numbers.map((set, index) => `세트 ${index + 1}: ${set.join(', ')}`).join('\n'); // 세트별로 구분하여 복사
     navigator.clipboard.writeText(textToCopy).then(() => {
       setCopySuccess('복사 완료!');
       setTimeout(() => setCopySuccess(''), 2000); // 2초 후 메시지 제거
@@ -127,25 +139,55 @@ export default function Home() {
 
   // 카카오톡 공유 함수
   const shareToKakao = (numbers) => {
+    console.log('shareToKakao 함수에 전달된 numbers:', numbers);
     if (typeof window !== 'undefined' && window.Kakao) {
-      if (!window.Kakao.isInitialized()) {
-        window.Kakao.init(process.env.NEXT_PUBLIC_KAKAO_APP_KEY);
-      }
-      
-      if (window.Kakao.Link) {
-        window.Kakao.Link.sendDefault({
-          objectType: 'text',
-          text: `로또 번호: ${numbers.join(', ')}`,
-          link: {
-            mobileWebUrl: window.location.href,
-            webUrl: window.location.href,
-          },
-        });
-      } else {
-        console.error('Kakao.Link is not available');
-      }
+        if (!window.Kakao.isInitialized()) {
+            window.Kakao.init(process.env.NEXT_PUBLIC_KAKAO_APP_KEY);
+        }
+        
+        if (window.Kakao.Link) {
+            let textToShare = '';
+            if (Array.isArray(numbers)) {
+                if (Array.isArray(numbers[0])) {
+                    // numbers가 배열의 배열인 경우 (저장된 여러 세트)
+                    textToShare = numbers.map((set, index) => `세트 ${index + 1}: ${set.join(', ')}`).join('\n');
+                } else {
+                    // 단일 배열인 경우 (단일 세트)
+                    textToShare = `세트 1: ${numbers.join(', ')}`;
+                }
+            } else {
+                console.error('numbers는 배열이 아닙니다.');
+                return;
+            }
+            
+            console.log('공유할 텍스트:', textToShare); // 공유할 텍스트 로그 추가
+            
+            window.Kakao.Link.sendDefault({
+                objectType: 'text',
+                text: textToShare,
+                link: {
+                    mobileWebUrl: window.location.href,
+                    webUrl: window.location.href,
+                },
+            });
+        } else {
+            console.error('Kakao.Link is not available');
+        }
     } else {
-      console.error('Kakao SDK is not loaded');
+        console.error('Kakao SDK is not loaded');
+    }
+  };
+
+  useEffect(() => {
+    console.log('현재 저장된 번호:', savedNumbers);
+  }, [savedNumbers]);
+
+  // 다시 생성하기 버튼 클릭 핸들러
+  const handleRegenerate = () => {
+    if (lastButtonPressed === 'generate') {
+      generateLottoNumbers(); // 생성하기 기능 호출
+    } else if (lastButtonPressed === 'recommend') {
+      fetchRecommendedNumbers(); // AI 추천 기능 호출
     }
   };
 
@@ -159,10 +201,77 @@ export default function Home() {
       <main>
         <h1 className="title">Use Wook`s 로또</h1>
         
+        {/* 생성된 번호와 추천 번호를 하나의 영역에서 보여줌 */}
+        {(lottoNumbers.length > 0 || finalNumbers.length > 0) && (
+          <div className="result animated" key={animationKey}>
+            <h3>{lottoNumbers.length > 0 ? '생성된 번호' : '추천 번호'}</h3>
+            <div className="numbers" ref={numbersRef}>
+              {lottoNumbers.length > 0 ? (
+                lottoNumbers.map((number, index) => (
+                  <span
+                    key={index}
+                    className="number"
+                    style={{backgroundColor: getBackgroundColor(number)}}
+                  >
+                    {number}
+                  </span>
+                ))
+              ) : (
+                finalNumbers.map((number, index) => (
+                  <span
+                    key={index}
+                    className="number"
+                    style={{backgroundColor: getBackgroundColor(number)}}
+                  >
+                    {number}
+                  </span>
+                ))
+              )}
+            </div>
+            <div className="action-buttons">
+              <button onClick={saveLottoNumbers} className="action-button">저장하기</button>
+              <button onClick={handleRegenerate} className="action-button">다시 생성하기</button> {/* 생성하기 버튼 추가 */}
+            </div>
+          </div>
+        )}
+
+        {/* 저장된 번호 표시 버튼 추가 */}
+        <button onClick={() => setShowSavedNumbers(!showSavedNumbers)} className="action-button">
+          {showSavedNumbers ? '저장된 번호 숨기기' : '저장된 번호 보기'}
+        </button>
+
+        {/* 저장된 번호 영역 추가 */}
+        {showSavedNumbers && savedNumbers.length > 0 && (
+          <div className="saved-numbers">
+            <h3>저장된 번호</h3>
+            {savedNumbers.map((numbers, index) => (
+              <div key={index} className="numbers">
+                <h4>세트 {index + 1}</h4> {/* 각 세트에 대한 제목 추가 */}
+                {numbers.map((number, idx) => (
+                  <span
+                    key={idx}
+                    className="number"
+                    style={{backgroundColor: getBackgroundColor(number)}}
+                  >
+                    {number}
+                  </span>
+                ))}
+                <button onClick={() => deleteSavedNumbers(index)} className="delete-button">X</button> {/* 삭제 버튼 추가 */}
+              </div>
+            ))}
+            <div className="action-buttons">
+              <button onClick={() => copyToClipboard(savedNumbers)} className="action-button">모든 번호 복사하기</button>
+              <button onClick={() => shareToKakao(savedNumbers)} className="kakao-share-button">
+                <img src="/kakao-talk-icon.svg" alt="카카오톡 공유" className="kakao-icon" />
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="content">
           <div className="left-column">
             <div className="recent-numbers">
-              {loadingRecent ? ( // 최근 당첨번호 로딩 상태에 따라 표시
+              {loadingRecent ? (
                 <p className="loading-message">로딩 중...</p>
               ) : recentWinningNumbers ? (
                 <div>
@@ -188,15 +297,15 @@ export default function Home() {
                   </div>
                 </div>
               ) : (
-                <p>당첨 번호를 가져오는 데 실패했습니다.</p> // 데이터가 없을 때 메시지
+                <p>당첨 번호를 가져오는 데 실패했습니다.</p>
               )}
             </div>
             
             <button onClick={togglePastNumbers} className="past-numbers-button">
-              {showPastNumbers ? '지난 당첨번호 숨기기' : '지난 당첨번호 조회'}
+              {showPastNumbers ? '지 당첨번호 숨기기' : '지 당첨번호 조회'}
             </button>
             
-            {loadingPast ? ( // 과거 당첨번호 로딩 상태에 따라 표시
+            {loadingPast ? (
               <p className="loading-message">로딩 중...</p>
             ) : showPastNumbers && pastWinningNumbers.length > 0 ? (
               pastWinningNumbers.map((number, index) => (
@@ -223,7 +332,7 @@ export default function Home() {
                 </div>
               ))
             ) : (
-              pastWinningNumbers.length === 0 ? null : ( // 데이터가 없을 때 아무것도 표시하지 않음
+              pastWinningNumbers.length === 0 ? null : (
                 null)
             )}
           </div>
@@ -259,57 +368,7 @@ export default function Home() {
               </button>
             </div>
             
-            {lottoNumbers.length > 0 && (
-              <div className="result animated" key={animationKey}>
-                <h3>생성된 번호</h3>
-                <div className="numbers" ref={numbersRef}>
-                  {lottoNumbers.map((number, index) => (
-                    <span
-                      key={index}
-                      className="number"
-                      style={{backgroundColor: getBackgroundColor(number)}}
-                    >
-                      {number}
-                    </span>
-                  ))}
-                </div>
-                <div className="action-buttons">
-                  <button onClick={() => copyToClipboard(lottoNumbers)} className="action-button">
-                    복사하기
-                  </button>
-                  <button onClick={() => shareToKakao(lottoNumbers)} className="kakao-share-button">
-                    <img src="/kakao-talk-icon.svg" alt="카카오톡 공유" className="kakao-icon" />
-                  </button>
-                </div>
-                {copySuccess && <p className="copy-message">{copySuccess}</p>}
-              </div>
-            )}
-
-            {finalNumbers && finalNumbers.length > 0 && (
-              <div className="result animated" key={animationKey}>
-                <h3>추천 번호</h3>
-                <div className="numbers">
-                  {finalNumbers.map((number, index) => (
-                    <span
-                      key={index}
-                      className="number"
-                      style={{backgroundColor: getBackgroundColor(number)}}
-                    >
-                      {number}
-                    </span>
-                  ))}
-                </div>
-                <div className="action-buttons">
-                  <button onClick={() => copyToClipboard(finalNumbers)} className="action-button">
-                    복사하기
-                  </button>
-                  <button onClick={() => shareToKakao(finalNumbers)} className="kakao-share-button">
-                    <img src="/kakao-talk-icon.svg" alt="카카오톡 공유" className="kakao-icon" />
-                  </button>
-                </div>
-                {copySuccess && <p className="copy-message">{copySuccess}</p>}
-              </div>
-            )}
+            
           </div>
         </div>
       </main>
@@ -389,7 +448,7 @@ export default function Home() {
           cursor: pointer;
           transition: background-color 0.3s;
           width: 100%; /* 버튼의 가로 크기를 동일하게 설정 */
-          margin-bottom: 1rem; /* 버튼 간격을 띄우기 위해 아래쪽 여백 추가 */
+          margin-bottom: 1rem; /* 버튼 간격을 띄우기 위해 아쪽 여백 추가 */
         }
 
         .past-numbers-button:hover, .generate-button:hover {
@@ -411,7 +470,7 @@ export default function Home() {
         }
 
         .loading-message {
-          animation: fadeIn 1s infinite; // 애니메이션 추가
+          animation: fadeIn 1s infinite; // 애니메이션 가
         }
 
         @keyframes fadeIn {
@@ -466,6 +525,23 @@ export default function Home() {
           margin-top: 0.5rem;
           color: #4CAF50;
           font-weight: bold;
+        }
+
+        .saved-numbers {
+          margin-top: 2rem;
+          background-color: rgba(255, 255, 255, 0.8);
+          padding: 1rem;
+          border-radius: 5px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .delete-button {
+          margin-left: 10px;
+          background-color: red;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          padding: 0 5px;
         }
       `}</style>
     </div>
