@@ -19,7 +19,7 @@ export default function Home() {
   const [showGenerator, setShowGenerator] = useState(true); // 생성기 영역 상태 추가
   const numbersRef = useRef(null);
   
-  // 마지막으로 눌린 버튼을 추적하는 상태 추가
+  // 마지막으로 눌린 버튼을 추��하는 상태 추가
   const [lastButtonPressed, setLastButtonPressed] = useState(null);
 
   const fetchCurrentLottoNumber = useCallback(async () => {
@@ -64,7 +64,7 @@ export default function Home() {
     fetchCurrentLottoNumber();
   }, [fetchCurrentLottoNumber]);
 
-  // 로또 번호 생성 함수
+  // 로또 번호 생성 ���수
   const generateLottoNumbers = useCallback(() => {
     const excluded = excludeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
     const included = includeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
@@ -155,7 +155,7 @@ export default function Home() {
                     // numbers가 배열의 배열인 경우 (저장된 여러 세트)
                     textToShare = numbers.map((set, index) => `세트 ${index + 1}: ${set.join(', ')}`).join('\n');
                 } else {
-                    // 단일 배열인 경우 (단일 세트)
+                    // 단일 배열인 우 (단일 세트)
                     textToShare = `세트 1: ${numbers.join(', ')}`;
                 }
             } else {
@@ -290,18 +290,22 @@ export default function Home() {
             <h3>저장된 번호</h3>
             {savedNumbers.length > 0 ? (
               savedNumbers.map((numbers, index) => (
-                <div key={index} className="numbers">
-                  <h4>세트 {index + 1}</h4>
-                  {numbers.map((number, idx) => (
-                    <span
-                      key={idx}
-                      className="number"
-                      style={{ backgroundColor: getBackgroundColor(number) }}
-                    >
-                      {number}
-                    </span>
-                  ))}
-                  <button onClick={() => deleteSavedNumbers(index)} className="delete-button">X</button>
+                <div key={index} className="set-container"> {/* 세트별 컨테이너 추가 */}
+                  <h4 className="set-title">Set {index + 1}</h4> {/* 세트 제목 */}
+                  <div className="number-row"> {/* 번호와 삭제 버튼을 포함하는 행 */}
+                    <div className="number-container"> {/* 숫자들을 수평으로 정렬 */}
+                      {numbers.map((number, idx) => (
+                        <span
+                          key={idx}
+                          className="number"
+                          style={{ backgroundColor: getBackgroundColor(number) }}
+                        >
+                          {number}
+                        </span>
+                      ))}
+                    </div>
+                    <button onClick={() => deleteSavedNumbers(index)} className="delete-button">X</button>
+                  </div>
                 </div>
               ))
             ) : (
@@ -576,7 +580,7 @@ export default function Home() {
           width: 100%; /* 너비를 100%로 설정 */
           padding: 0.5rem; /* 패딩 추가 */
           margin-top: 0.5rem; /* 위쪽 여백 추가 */
-          border: 2px solid #4CAF50; /* 테두리 색상 설정 */
+          border: 2px solid #4CAF50; /* 테���리 색상 설정 */
           border-radius: 5px; /* 모서리 둥글게 */
           font-size: 1rem; /* 글자 크기 설정 */
           transition: border-color 0.3s; /* 테두리 색상 변화 애니메이션 */
@@ -585,6 +589,36 @@ export default function Home() {
         .input-field:focus {
           border-color: #45a049; /* 포커스 시 테두리 색상 변경 */
           outline: none; /* 기본 아웃라인 제거 */
+        }
+
+        .set-container {
+          margin-bottom: 0.5rem; /* 세트 간의 간격 */
+        }
+
+        .set-title {
+          font-size: 0.8rem; /* 폰트 크기 조정 */
+          font-weight: bold; /* 볼드 처리 */
+          margin-bottom: 0.2rem; /* 제목과 번호 간의 간격 */
+        }
+
+        .number-row {
+          display: flex; /* Flexbox 사용 */
+          align-items: center; /* 수직 정렬 */
+        }
+
+        .number-container {
+          display: flex; /* Flexbox 사용 */
+          gap: 0.5rem; /* 번호 간격 조정 */
+          margin-right: 0.5rem; /* 삭제 버튼과의 간격 */
+        }
+
+        .delete-button {
+          background-color: red; /* 삭제 버튼 색상 */
+          color: white; /* 삭제 버튼 글자 색상 */
+          border: none; /* 테두리 제거 */
+          border-radius: 5px; /* 모서리 둥글게 */
+          cursor: pointer; /* 커서 포인터로 변경 */
+          padding: 0.2rem 0.5rem; /* 패딩 추가 */
         }
       `}</style>
     </div>
