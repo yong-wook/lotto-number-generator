@@ -591,8 +591,8 @@ export default function Home() {
         .input-field {
           width: 100%; /* 너비를 100%로 설정 */
           padding: 0.5rem; /* 패딩 추가 */
-          margin-top: 0.5rem; /* 위쪽 여백 추가 */
-          border: 2px solid #4CAF50; /* 테리 색상 설정 */
+          margin: 0.5rem 0; /* 위쪽 여백 추가 */
+          border: 2px solid #4CAF50; /* 테두리 색상 설정 */
           border-radius: 5px; /* 모서리 둥글게 */
           font-size: 1rem; /* 글자 크기 설정 */
           transition: border-color 0.3s; /* 테두리 색상 변화 애니메이션 */
@@ -601,6 +601,11 @@ export default function Home() {
         .input-field:focus {
           border-color: #45a049; /* 포커스 시 테두리 색상 변경 */
           outline: none; /* 기본 아웃라인 제거 */
+        }
+
+        .dark-mode .input-field {
+          background-color: black; /* 다크 모드에서 배경색을 블랙으로 설정 */
+          color: white; /* 글자색을 흰색으로 설정 */
         }
 
         .set-container {
