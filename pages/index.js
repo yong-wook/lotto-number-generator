@@ -16,10 +16,11 @@ export default function Home() {
   const [copySuccess, setCopySuccess] = useState('');
   const [savedNumbers, setSavedNumbers] = useState([]);
   const [showSavedNumbers, setShowSavedNumbers] = useState(true);
-  const [showGenerator, setShowGenerator] = useState(true); // 생성기 영역 상태 추가
+  const [showGenerator, setShowGenerator] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(true); // 다크 모드 상태 기본값을 true로 설정
   const numbersRef = useRef(null);
   
-  // 마지막으로 눌린 버튼을 추��하는 상태 추가
+  // 마지막으로 눌린 버튼을 추하는 상태 추가
   const [lastButtonPressed, setLastButtonPressed] = useState(null);
 
   const fetchCurrentLottoNumber = useCallback(async () => {
@@ -64,7 +65,7 @@ export default function Home() {
     fetchCurrentLottoNumber();
   }, [fetchCurrentLottoNumber]);
 
-  // 로또 번호 생성 ���수
+  // 로또 번호 생성 수
   const generateLottoNumbers = useCallback(() => {
     const excluded = excludeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
     const included = includeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
@@ -195,14 +196,19 @@ export default function Home() {
   };
 
   return (
-    <div className="container">
+    <div className={`container ${isDarkMode ? 'dark-mode' : ''}`}> {/* 다크 모드 클래스 추가 */}
       <Head>
         <title>로또 번호 생성기</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <main>
-        <h1 className="title">Use Wook`s 로또</h1>
+        <div className="title-container">
+          <h1 className="title">Use Wook`s 로또</h1>
+          <button onClick={() => setIsDarkMode(!isDarkMode)} className="dark-mode-button">
+            {isDarkMode ? '☀️' : '🌙'} {/* 이모지로 변경 */}
+          </button>
+        </div>
         
         {/* 번호 생성기 숨기기 버튼 추가 */}
         <button onClick={() => setShowGenerator(!showGenerator)} className="action-button">
@@ -236,7 +242,7 @@ export default function Home() {
             </div>
             <div className="action-buttons">
               <button onClick={generateLottoNumbers} className="generate-button">
-                생성하기
+                생��하기
               </button>
               <button onClick={fetchRecommendedNumbers} className="generate-button">
                 AI 추천
@@ -304,7 +310,7 @@ export default function Home() {
                         </span>
                       ))}
                     </div>
-                    <button onClick={() => deleteSavedNumbers(index)} className="delete-button">X</button>
+                    <button onClick={() => deleteSavedNumbers(index)} className="delete-button">❌</button>
                   </div>
                 </div>
               ))
@@ -399,7 +405,13 @@ export default function Home() {
           flex-direction: column;
           justify-content: flex-start;
           align-items: center;
-          background-color: #f9f9f9; /* 배경색 추가 */
+          background-color: white; /* 기본 배경색 */
+          color: black; /* 기본 글자색 */
+        }
+
+        .dark-mode {
+          background-color: #121212; /* 다크 모드 배경색 */
+          color: white; /* 다크 모드 글자색 */
         }
 
         main {
@@ -580,7 +592,7 @@ export default function Home() {
           width: 100%; /* 너비를 100%로 설정 */
           padding: 0.5rem; /* 패딩 추가 */
           margin-top: 0.5rem; /* 위쪽 여백 추가 */
-          border: 2px solid #4CAF50; /* 테���리 색상 설정 */
+          border: 2px solid #4CAF50; /* 테리 색상 설정 */
           border-radius: 5px; /* 모서리 둥글게 */
           font-size: 1rem; /* 글자 크기 설정 */
           transition: border-color 0.3s; /* 테두리 색상 변화 애니메이션 */
@@ -618,7 +630,31 @@ export default function Home() {
           border: none; /* 테두리 제거 */
           border-radius: 5px; /* 모서리 둥글게 */
           cursor: pointer; /* 커서 포인터로 변경 */
-          padding: 0.2rem 0.5rem; /* 패딩 추가 */
+          padding: 0.2rem 0.5rem; /* 패 추가 */
+        }
+
+        .title-container {
+          display: flex; /* Flexbox 사용 */
+          align-items: center; /* 수직 정렬 */
+          justify-content: space-between; /* 공간을 균등하게 분배 */
+          margin-bottom: 1rem; /* 제목과 다른 요소 간의 간격 */
+        }
+
+        .dark-mode-button {
+          font-size: 1rem; /* 버튼 크기 조정 */
+          padding: 0.2rem 0.5rem; /* 패딩 조정 */
+          margin-left: 0.5rem; /* 제목과의 간격 */
+          background-color: transparent; /* 배경색 투명 */
+          border: none; /* 테두리 제거 */
+          cursor: pointer; /* 커서 포인터로 변경 */
+        }
+
+        .delete-button {
+          background-color: transparent; /* 배경색 투명 */
+          color: red; /* 삭제 버튼 글자색 */
+          border: none; /* 테두리 제거 */
+          cursor: pointer; /* 커서 포인터로 변경 */
+          padding: 0; /* 패딩 제거 */
         }
       `}</style>
     </div>
