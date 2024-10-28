@@ -3,7 +3,7 @@ import Head from 'next/head';
 
 export default function Home() {
   const [recentWinningNumbers, setRecentWinningNumbers] = useState(null);
-  const [currentDrawNo, setCurrentDrawNo] = useState(1141);
+  const [currentDrawNo, setCurrentDrawNo] = useState(null);
   const [pastWinningNumbers, setPastWinningNumbers] = useState([]);
   const [showPastNumbers, setShowPastNumbers] = useState(false);
   const [excludeNumbers, setExcludeNumbers] = useState('');
