@@ -59,7 +59,7 @@ export default function Home() {
       fetchPastWinningNumbers();
     }
     setShowPastNumbers(!showPastNumbers);
-  }, [showPastNumbers]);
+  }, [showPastNumbers,currentDrawNo]);
 
   useEffect(() => {
     fetchCurrentLottoNumber();
