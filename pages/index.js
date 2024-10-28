@@ -359,9 +359,11 @@ export default function Home() {
               )}
             </div>
             
-            <button onClick={togglePastNumbers} className="past-numbers-button">
-              {showPastNumbers ? '지난 당첨번호 숨기기' : '지난 당첨번호 조회'}
-            </button>
+            {recentWinningNumbers && ( // 최근 당첨번호가 있을 때만 버튼 노출
+              <button onClick={togglePastNumbers} className="past-numbers-button">
+                {showPastNumbers ? '지난 당첨번호 숨기기' : '지난 4주간 당첨번호 조회'}
+              </button>
+            )}
             
             {loadingPast ? (
               <p className="loading-message">로딩 중...</p>
