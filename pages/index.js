@@ -18,10 +18,39 @@ export default function Home() {
   const [showSavedNumbers, setShowSavedNumbers] = useState(true);
   const [showGenerator, setShowGenerator] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(true); // 다크 모드 상태 기본값을 true로 설정
+  const [recommendedPair, setRecommendedPair] = useState([]);
+  const [excludedNumbers, setExcludedNumbers] = useState([]);
+  const [currentWeekInfo, setCurrentWeekInfo] = useState('');
   const numbersRef = useRef(null);
   
   // 마지막으로 눌린 버튼을 추하는 상태 추가
   const [lastButtonPressed, setLastButtonPressed] = useState(null);
+
+  // 현재 날짜를 기반으로 "몇년 몇월의 몇째 주" 형태로 포맷팅하는 함수
+  const getCurrentWeekInfo = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    
+    // 현재 날짜가 해당 월의 몇 번째 주인지 계산
+    const firstDayOfMonth = new Date(year, now.getMonth(), 1);
+    const dayOfWeek = firstDayOfMonth.getDay(); // 0: 일요일, 1: 월요일, ..., 6: 토요일
+    
+    // 현재 날짜의 일(day)
+    const currentDay = now.getDate();
+    
+    // 첫 번째 주에 며칠이 포함되어 있는지 계산 (7 - 첫날의 요일)
+    const daysInFirstWeek = 7 - dayOfWeek;
+    
+    let weekNumber;
+    if (currentDay <= daysInFirstWeek) {
+      weekNumber = 1;
+    } else {
+      weekNumber = Math.ceil((currentDay - daysInFirstWeek) / 7) + 1;
+    }
+    
+    return `${year}년 ${month}월 ${weekNumber}째주`;
+  };
 
   const fetchCurrentLottoNumber = useCallback(async () => {
     setLoadingRecent(true);
@@ -65,6 +94,28 @@ export default function Home() {
     fetchCurrentLottoNumber();
   }, [fetchCurrentLottoNumber]);
 
+  // 페이지 로드 시 현재 주 정보 설정
+  useEffect(() => {
+    setCurrentWeekInfo(getCurrentWeekInfo());
+  }, []);
+
+  // 페이지 로드 시 자동으로 추천 정보 가져오기
+  useEffect(() => {
+    const fetchRecommendInfo = async () => {
+      try {
+        const response = await fetch('/api/recommend-lotto');
+        const data = await response.json();
+        console.log("자동 추천 정보:", data);
+        setRecommendedPair(data.recommendedPair);
+        setExcludedNumbers(data.excludedNumbers);
+      } catch (error) {
+        console.error('추천 정보 가져오기 실패:', error);
+      }
+    };
+    
+    fetchRecommendInfo();
+  }, []);
+
   // 로또 번호 생성 수
   const generateLottoNumbers = useCallback(() => {
     const excluded = excludeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
@@ -94,6 +145,8 @@ export default function Home() {
       const data = await response.json();
       console.log("추천 번호 데이터:", data);
       setFinalNumbers(data.finalNumbers); // 추천 번호를 배열로 설정
+      setRecommendedPair(data.recommendedPair); // 추천수 저장
+      setExcludedNumbers(data.excludedNumbers); // 제외수 저장
     } catch (error) {
       console.error('추천 번호 가져오기 실패:', error);
     }
@@ -215,6 +268,43 @@ export default function Home() {
           {showGenerator ? '번호 생성기 숨기기' : '번호 생성기 보기'}
         </button>
 
+        {/* 고정 추천수와 고정 제외수 정보 섹션 */}
+        {recommendedPair.length > 0 && excludedNumbers.length > 0 && (
+          <div className="recommendation-info">
+            <h3>{currentWeekInfo} 로또 추천 정보</h3>
+            <div className="info-container">
+              <div className="info-section">
+                <h4>추천 고정수</h4>
+                <div className="info-numbers">
+                  {recommendedPair.map((number, index) => (
+                    <span
+                      key={index}
+                      className="number"
+                      style={{ backgroundColor: getBackgroundColor(number) }}
+                    >
+                      {number}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="info-section">
+                <h4>추천 제외수</h4>
+                <div className="info-numbers">
+                  {excludedNumbers.map((number, index) => (
+                    <span
+                      key={index}
+                      className="number"
+                      style={{ backgroundColor: getBackgroundColor(number) }}
+                    >
+                      {number}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 번호 생성기 영역 추가 */}
         {showGenerator && (
           <div className="generator">
@@ -278,6 +368,7 @@ export default function Home() {
                 ))
               )}
             </div>
+            
             <div className="action-buttons">
               <button onClick={saveLottoNumbers} className="action-button">저장하기</button>
               <button onClick={handleRegenerate} className="action-button">다시 생성하기</button>
@@ -662,6 +753,86 @@ export default function Home() {
           border: none; /* 테두리 제거 */
           cursor: pointer; /* 커서 포인터로 변경 */
           padding: 0; /* 패딩 제거 */
+        }
+
+        /* 추천수와 제외수 표시 영역 스타일 */
+        .number-info {
+          margin-top: 1.5rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          padding: 1rem;
+          background-color: rgba(255, 255, 255, 0.1);
+          border-radius: 8px;
+        }
+        
+        .info-section {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        
+        .info-section h4 {
+          margin-bottom: 0.5rem;
+          font-size: 1rem;
+          color: #4CAF50;
+        }
+        
+        .info-numbers {
+          display: flex;
+          gap: 0.5rem;
+          justify-content: center;
+        }
+        
+        .number.small {
+          width: 30px;
+          height: 30px;
+          font-size: 0.9rem;
+        }
+        
+        .dark-mode .number-info {
+          background-color: rgba(0, 0, 0, 0.3);
+        }
+        
+        .dark-mode .info-section h4 {
+          color: #6FCF75;
+        }
+        
+        /* 추천 정보 섹션 스타일 */
+        .recommendation-info {
+          margin: 2rem 0;
+          padding: 1.5rem;
+          background-color: rgba(76, 175, 80, 0.1);
+          border-radius: 10px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .recommendation-info h3 {
+          text-align: center;
+          margin-bottom: 1.5rem;
+          color: #4CAF50;
+          font-size: 1.3rem;
+        }
+        
+        .info-container {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+        
+        @media (min-width: 768px) {
+          .info-container {
+            flex-direction: row;
+            justify-content: space-around;
+          }
+        }
+        
+        .dark-mode .recommendation-info {
+          background-color: rgba(76, 175, 80, 0.15);
+        }
+        
+        .dark-mode .recommendation-info h3 {
+          color: #6FCF75;
         }
       `}</style>
     </div>

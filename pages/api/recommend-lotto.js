@@ -96,5 +96,9 @@ function getRecommendedNumbers(lottoData) {
 
   console.log('최종 번호:', finalNumbers);
 
-  return { finalNumbers };
+  return { 
+    finalNumbers,
+    recommendedPair: maxPair,
+    excludedNumbers: leastCommonNumbers 
+  };
 }
