@@ -791,6 +791,14 @@ export default function Home() {
           min-width: 150px; /* 최소 너비 설정 */
         }
         
+        .info-numbers {
+          display: flex;
+          flex-direction: row; /* 가로 정렬 */
+          flex-wrap: wrap; /* 필요시 줄바꿈 */
+          gap: 0.5rem; /* 숫자 간격 */
+          justify-content: center; /* 중앙 정렬 */
+        }
+        
         @media (max-width: 480px) {
           .info-container {
             flex-direction: column; /* 모바일에서는 세로 정렬 */
