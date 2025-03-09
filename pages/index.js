@@ -725,7 +725,8 @@ export default function Home() {
         }
 
         .dark-mode .recommendation-info {
-          background-color: rgba(30, 30, 30, 0.9);
+          background-color: #000000;
+          border: 1px solid #333333;
         }
         
         .dark-mode .recommendation-info h3 {
@@ -745,6 +746,20 @@ export default function Home() {
           text-shadow: 0 0 2px rgba(255, 255, 255, 0.2);
         }
 
+        .dark-mode .saved-numbers {
+          background-color: #000000;
+          border: 1px solid #333333;
+          padding: 15px;
+          border-radius: 10px;
+        }
+
+        .dark-mode .result {
+          background-color: #000000;
+          border: 1px solid #333333;
+          padding: 15px;
+          border-radius: 10px;
+        }
+
         .dark-mode .result h3 {
           color: #6FCF75;
           font-weight: bold;
@@ -752,7 +767,8 @@ export default function Home() {
         }
 
         .dark-mode .generator {
-          background-color: rgba(30, 30, 30, 0.9);
+          background-color: #000000;
+          border: 1px solid #333333;
         }
 
         .set-title {
