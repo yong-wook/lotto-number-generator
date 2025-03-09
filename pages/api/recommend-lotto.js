@@ -17,7 +17,7 @@ export default async function handler(req, res) {
       .from('lottoResults')
       .select('*')
       .order('drwNo', { ascending: false })
-      .limit(4);
+      .limit(6);
 
     if (recentError) throw recentError;
 
@@ -92,7 +92,7 @@ function getRecommendedNumbers(lottoData, recentData) {
 
   console.log('가장 적게 출현한 숫자 4개:', leastCommonNumbers);
 
-  // 최근 4주간 당첨 번호에서 가장 많이 나온 숫자 찾기
+  // 최근 6주간 당첨 번호에서 가장 많이 나온 숫자 2개 찾기
   const recentNumberCounts = {};
   
   recentData.forEach(item => {
@@ -103,15 +103,15 @@ function getRecommendedNumbers(lottoData, recentData) {
     recentNumberCounts[item.bonus] = (recentNumberCounts[item.bonus] || 0) + 1;
   });
   
-  // 최근 4주간 가장 많이 나온 숫자 2개 찾기
+  // 최근 6주간 가장 많이 나온 숫자 2개 찾기
   const mostCommonRecentNumbers = Object.entries(recentNumberCounts)
     .sort((a, b) => b[1] - a[1])  // 내림차순 정렬
     .slice(0, 2)
     .map(entry => Number(entry[0]));
     
-  console.log('최근 4주간 가장 많이 나온 숫자 2개:', mostCommonRecentNumbers);
+  console.log('최근 6주간 가장 많이 나온 숫자 2개:', mostCommonRecentNumbers);
 
-  // 제외수에 최근 4주간 가장 많이 나온 숫자 2개 추가
+  // 제외수에 최근 6주간 가장 많이 나온 숫자 2개 추가
   const combinedExcludedNumbers = [...leastCommonNumbers, ...mostCommonRecentNumbers];
   
   // 중복 제거
