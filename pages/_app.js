@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import "@/styles/globals.css";
 import Script from 'next/script';
+import { Analytics } from '@vercel/analytics/react';
 
 export default function App({ Component, pageProps }) {
   useEffect(() => {
@@ -20,5 +21,10 @@ export default function App({ Component, pageProps }) {
     }
   }, []);
 
-  return <Component {...pageProps} />;
+  return (
+    <>
+      <Component {...pageProps} />
+      <Analytics />
+    </>
+  );
 }
