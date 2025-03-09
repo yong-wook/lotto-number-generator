@@ -134,6 +134,6 @@ function getRecommendedNumbers(lottoData, recentData) {
   return { 
     finalNumbers,
     recommendedPair: maxPair,
-    excludedNumbers: uniqueExcludedNumbers.slice(0, 6)  // 최대 6개까지만 반환
+    excludedNumbers: uniqueExcludedNumbers.slice(0, 6).sort((a, b) => a - b)  // 최대 6개까지만 반환하고 오름차순 정렬
   };
 }
