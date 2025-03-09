@@ -4,6 +4,7 @@ import { randomInt } from 'crypto';
 
 export default async function handler(req, res) {
   try {
+    // 모든 로또 결과 데이터 가져오기
     const { data, error } = await supabaseAdmin
       .from('lottoResults')
       .select('*')
@@ -11,7 +12,16 @@ export default async function handler(req, res) {
 
     if (error) throw error;
 
-    const recommendedNumbers = getRecommendedNumbers(data);
+    // 최근 4주간의 당첨 번호 가져오기
+    const { data: recentData, error: recentError } = await supabaseAdmin
+      .from('lottoResults')
+      .select('*')
+      .order('drwNo', { ascending: false })
+      .limit(4);
+
+    if (recentError) throw recentError;
+
+    const recommendedNumbers = getRecommendedNumbers(data, recentData);
     res.status(200).json(recommendedNumbers);
   } catch (error) {
     console.error('Error:', error);
@@ -19,7 +29,7 @@ export default async function handler(req, res) {
   }
 }
 
-function getRecommendedNumbers(lottoData) {
+function getRecommendedNumbers(lottoData, recentData) {
   const numberPairs = {};
   const numberCounts = {};
   const currentWinningNumbers = new Set();
@@ -82,8 +92,33 @@ function getRecommendedNumbers(lottoData) {
 
   console.log('가장 적게 출현한 숫자 4개:', leastCommonNumbers);
 
+  // 최근 4주간 당첨 번호에서 가장 많이 나온 숫자 찾기
+  const recentNumberCounts = {};
+  
+  recentData.forEach(item => {
+    const numbers = item.numbers.split(',').map(Number);
+    numbers.forEach(num => {
+      recentNumberCounts[num] = (recentNumberCounts[num] || 0) + 1;
+    });
+    recentNumberCounts[item.bonus] = (recentNumberCounts[item.bonus] || 0) + 1;
+  });
+  
+  // 최근 4주간 가장 많이 나온 숫자 2개 찾기
+  const mostCommonRecentNumbers = Object.entries(recentNumberCounts)
+    .sort((a, b) => b[1] - a[1])  // 내림차순 정렬
+    .slice(0, 2)
+    .map(entry => Number(entry[0]));
+    
+  console.log('최근 4주간 가장 많이 나온 숫자 2개:', mostCommonRecentNumbers);
+
+  // 제외수에 최근 4주간 가장 많이 나온 숫자 2개 추가
+  const combinedExcludedNumbers = [...leastCommonNumbers, ...mostCommonRecentNumbers];
+  
+  // 중복 제거
+  const uniqueExcludedNumbers = [...new Set(combinedExcludedNumbers)];
+  
   // 나머지 4개의 숫자 선택
-  const excludedNumbers = new Set([...maxPair, ...currentWinningNumbers, ...leastCommonNumbers]);
+  const excludedNumbers = new Set([...maxPair, ...currentWinningNumbers, ...uniqueExcludedNumbers]);
   const randomNumbersSet = new Set();
   while (randomNumbersSet.size < 4) {
     const num = randomInt(1, 46);
@@ -99,6 +134,6 @@ function getRecommendedNumbers(lottoData) {
   return { 
     finalNumbers,
     recommendedPair: maxPair,
-    excludedNumbers: leastCommonNumbers 
+    excludedNumbers: uniqueExcludedNumbers.slice(0, 6)  // 최대 6개까지만 반환
   };
 }
