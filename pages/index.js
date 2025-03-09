@@ -498,24 +498,33 @@ export default function Home() {
           flex-direction: column;
           justify-content: flex-start;
           align-items: center;
-          background-color: white; /* 기본 배경색 */
-          color: black; /* 기본 글자색 */
         }
 
         .dark-mode {
           background-color: #121212; /* 다크 모드 배경색 */
-          color: white; /* 다크 모드 글자색 */
+          color: #e0e0e0; /* 다크 모드 기본 텍스트 색상 */
         }
 
-        main {
-          padding: 1rem 0;
+        .dark-mode h1, .dark-mode h2, .dark-mode h3, .dark-mode h4 {
+          color: #ffffff; /* 다크 모드에서 제목 색상을 더 밝게 */
+        }
+
+        .dark-mode .result h3, .dark-mode .saved-numbers h3 {
+          color: #6FCF75; /* 다크 모드에서 결과 및 저장된 번호 제목 색상 */
+          font-weight: bold;
+        }
+
+        .dark-mode .set-title {
+          color: #6FCF75; /* 다크 모드에서 세트 제목 색상 */
+        }
+
+        .main {
+          padding: 5rem 0;
           flex: 1;
           display: flex;
           flex-direction: column;
-          justify-content: flex-start;
+          justify-content: center;
           align-items: center;
-          width: 100%;
-          max-width: 1200px;
         }
 
         .title {
@@ -701,138 +710,55 @@ export default function Home() {
           color: white; /* 글자색을 흰색으로 설정 */
         }
 
-        .set-container {
-          margin-bottom: 0.5rem; /* 세트 간의 간격 */
+        .dark-mode h3 {
+          color: #ffffff; /* 다크 모드에서 제목 색상을 더 밝게 */
+          text-shadow: 0 0 2px rgba(255, 255, 255, 0.2); /* 텍스트에 약간의 그림자 추가 */
         }
 
-        .set-title {
-          font-size: 0.8rem; /* 폰트 크기 조정 */
-          font-weight: bold; /* 볼드 처리 */
-          margin-bottom: 0.2rem; /* 제목과 번호 간의 간격 */
+        .dark-mode .result h3, .dark-mode .saved-numbers h3 {
+          color: #6FCF75; /* 다크 모드에서 결과 및 저장된 번호 제목 색상 */
+          font-weight: bold;
         }
 
-        .number-row {
-          display: flex; /* Flexbox 사용 */
-          align-items: center; /* 수직 정렬 */
+        .dark-mode .set-title {
+          color: #6FCF75; /* 다크 모드에서 세트 제목 색상 */
         }
 
-        .number-container {
-          display: flex; /* Flexbox 사용 */
-          gap: 0.5rem; /* 번호 간격 조정 */
-          margin-right: 0.5rem; /* 삭제 버튼과의 간격 */
-        }
-
-        .delete-button {
-          background-color: red; /* 삭제 버튼 색상 */
-          color: white; /* 삭제 버튼 글자 색상 */
-          border: none; /* 테두리 제거 */
-          border-radius: 5px; /* 모서리 둥글게 */
-          cursor: pointer; /* 커서 포인터로 변경 */
-          padding: 0.2rem 0.5rem; /* 패 추가 */
-        }
-
-        .title-container {
-          display: flex; /* Flexbox 사용 */
-          align-items: center; /* 수직 정렬 */
-          justify-content: space-between; /* 공간을 균등하게 분배 */
-          margin-bottom: 1rem; /* 제목과 다른 요소 간의 간격 */
-        }
-
-        .dark-mode-button {
-          font-size: 1rem; /* 버튼 크기 조정 */
-          padding: 0.2rem 0.5rem; /* 패딩 조정 */
-          margin-left: 0.5rem; /* 제목과의 간격 */
-          background-color: transparent; /* 배경색 투명 */
-          border: none; /* 테두리 제거 */
-          cursor: pointer; /* 커서 포인터로 변경 */
-        }
-
-        .delete-button {
-          background-color: transparent; /* 배경색 투명 */
-          color: red; /* 삭제 버튼 글자색 */
-          border: none; /* 테두리 제거 */
-          cursor: pointer; /* 커서 포인터로 변경 */
-          padding: 0; /* 패딩 제거 */
-        }
-
-        /* 추천수와 제외수 표시 영역 스타일 */
-        .number-info {
-          margin-top: 1.5rem;
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-          padding: 1rem;
-          background-color: rgba(255, 255, 255, 0.1);
-          border-radius: 8px;
-        }
-        
-        .info-section {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-        
-        .info-section h4 {
-          margin-bottom: 0.5rem;
-          font-size: 1rem;
-          color: #4CAF50;
-        }
-        
-        .info-numbers {
-          display: flex;
-          gap: 0.5rem;
-          justify-content: center;
-        }
-        
-        .number.small {
-          width: 30px;
-          height: 30px;
-          font-size: 0.9rem;
-        }
-        
-        .dark-mode .number-info {
-          background-color: rgba(0, 0, 0, 0.3);
-        }
-        
-        .dark-mode .info-section h4 {
-          color: #6FCF75;
-        }
-        
-        /* 추천 정보 섹션 스타일 */
-        .recommendation-info {
-          margin: 2rem 0;
-          padding: 1.5rem;
-          background-color: rgba(76, 175, 80, 0.1);
-          border-radius: 10px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        
-        .recommendation-info h3 {
-          text-align: center;
-          margin-bottom: 1.5rem;
-          color: #4CAF50;
-          font-size: 1.3rem;
-        }
-        
-        .info-container {
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-        }
-        
-        @media (min-width: 768px) {
-          .info-container {
-            flex-direction: row;
-            justify-content: space-around;
-          }
-        }
-        
         .dark-mode .recommendation-info {
-          background-color: rgba(76, 175, 80, 0.15);
+          background-color: rgba(30, 30, 30, 0.9);
         }
         
         .dark-mode .recommendation-info h3 {
           color: #6FCF75;
+          text-shadow: 0 0 2px rgba(255, 255, 255, 0.2);
+        }
+
+        .dark-mode .info-section h4 {
+          color: #6FCF75;
+          font-weight: bold;
+          text-shadow: 0 0 2px rgba(255, 255, 255, 0.2);
+        }
+
+        .dark-mode .saved-numbers h3 {
+          color: #6FCF75;
+          font-weight: bold;
+          text-shadow: 0 0 2px rgba(255, 255, 255, 0.2);
+        }
+
+        .dark-mode .result h3 {
+          color: #6FCF75;
+          font-weight: bold;
+          text-shadow: 0 0 2px rgba(255, 255, 255, 0.2);
+        }
+
+        .dark-mode .generator {
+          background-color: rgba(30, 30, 30, 0.9);
+        }
+
+        .set-title {
+          font-size: 0.8rem;
+          font-weight: bold;
+          margin-bottom: 0.2rem;
         }
       `}</style>
     </div>
