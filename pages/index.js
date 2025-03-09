@@ -804,6 +804,34 @@ export default function Home() {
             flex-direction: column; /* 모바일에서는 세로 정렬 */
           }
         }
+
+        .title-container {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          justify-content: center;
+          gap: 1rem;
+          margin-bottom: 1rem;
+          width: 100%;
+        }
+
+        .title {
+          margin: 0;
+          line-height: 1.15;
+          font-size: 2.5rem;
+          text-align: center;
+        }
+
+        .dark-mode-button {
+          font-size: 1.5rem;
+          background-color: transparent;
+          border: none;
+          cursor: pointer;
+          padding: 0.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
       `}</style>
     </div>
   );
