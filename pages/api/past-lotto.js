@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { supabaseAdmin } from '../../lib/supabase';
 
 export default async function handler(req, res) {
   const { currentDrawNo } = req.query;
@@ -8,23 +9,35 @@ export default async function handler(req, res) {
   }
 
   try {
-    const pastDraws = await Promise.all(
-      [1, 2, 3, 4].map(async (weeksBefore) => {
-        const drawNo = currentDrawNo - weeksBefore;
-        const response = await axios.get(`https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo=${drawNo}`);
-        
-        if (response.data.returnValue === 'success') {
-          return response.data;
-        } else {
-          console.warn(`회차 ${drawNo}의 데이터를 가져오지 못했습니다.`);
-          return null;
-        }
-      })
-    );
+    // 최근 4주간의 당첨 번호를 DB에서 가져옵니다
+    const { data, error } = await supabaseAdmin
+      .from('lottoResults')
+      .select('*')
+      .lte('drwNo', currentDrawNo - 1)  // 현재 회차보다 작거나 같은 회차
+      .gte('drwNo', currentDrawNo - 4)  // 현재 회차 - 4보다 크거나 같은 회차
+      .order('drwNo', { ascending: false });
+    
+    if (error) {
+      throw error;
+    }
 
-    const validDraws = pastDraws.filter(draw => draw !== null);
+    // 데이터 형식을 클라이언트에서 기대하는 형식으로 변환
+    const formattedData = data.map(item => {
+      const numbers = item.numbers.split(',').map(Number);
+      return {
+        drwNo: item.drwNo,
+        drwNoDate: item.drwNoDate,
+        drwtNo1: numbers[0],
+        drwtNo2: numbers[1],
+        drwtNo3: numbers[2],
+        drwtNo4: numbers[3],
+        drwtNo5: numbers[4],
+        drwtNo6: numbers[5],
+        bnusNo: item.bonus
+      };
+    });
 
-    res.status(200).json(validDraws);
+    res.status(200).json(formattedData);
   } catch (error) {
     console.error('과거 로또 번호 가져오기 실패:', error);
     res.status(500).json({ error: '과거 로또 번호를 가져오는 데 실패했습니다.' });
