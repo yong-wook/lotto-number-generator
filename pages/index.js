@@ -776,6 +776,26 @@ export default function Home() {
           font-weight: bold;
           margin-bottom: 0.2rem;
         }
+
+        .info-container {
+          display: flex;
+          flex-direction: row; /* 가로 정렬로 변경 */
+          gap: 1.5rem;
+          justify-content: center; /* 중앙 정렬 */
+        }
+        
+        .info-section {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          min-width: 150px; /* 최소 너비 설정 */
+        }
+        
+        @media (max-width: 480px) {
+          .info-container {
+            flex-direction: column; /* 모바일에서는 세로 정렬 */
+          }
+        }
       `}</style>
     </div>
   );
