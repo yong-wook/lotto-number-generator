@@ -21,7 +21,67 @@ export default async function handler(req, res) {
 
     if (recentError) throw recentError;
 
+    // 추천 번호 생성
     const recommendedNumbers = getRecommendedNumbers(data, recentData);
+    
+    // 현재 시간 및 최신 회차 정보 가져오기
+    const currentDate = new Date();
+    const formattedDate = currentDate.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+    
+    // 최신 회차 + 1을 다음 회차로 설정
+    const nextDrawNo = recentData && recentData.length > 0 ? recentData[0].drwNo + 1 : 1;
+    
+    // recommendHistory 테이블에 저장
+    try {
+      // 먼저 이 회차에 대한 데이터가 이미 있는지 확인
+      const { data: existingEntry, error: checkError } = await supabaseAdmin
+        .from('recommendHistory')
+        .select('*')
+        .eq('week', nextDrawNo.toString())
+        .maybeSingle();
+        
+      if (checkError && !checkError.message.includes('does not exist')) {
+        console.error('기존 추천 데이터 확인 오류:', checkError);
+      } else {
+        if (existingEntry) {
+          // 기존 데이터 업데이트
+          const { error: updateError } = await supabaseAdmin
+            .from('recommendHistory')
+            .update({
+              date: formattedDate,
+              recommendedPair: recommendedNumbers.recommendedPair,
+              excludedNumbers: recommendedNumbers.excludedNumbers,
+            })
+            .eq('id', existingEntry.id);
+            
+          if (updateError) {
+            console.error('추천 데이터 업데이트 오류:', updateError);
+          } else {
+            console.log(`회차 ${nextDrawNo} 추천 데이터 업데이트됨`);
+          }
+        } else {
+          // 새 데이터 삽입
+          const { error: insertError } = await supabaseAdmin
+            .from('recommendHistory')
+            .insert({
+              week: nextDrawNo.toString(),
+              date: formattedDate,
+              recommendedPair: recommendedNumbers.recommendedPair,
+              excludedNumbers: recommendedNumbers.excludedNumbers,
+            });
+            
+          if (insertError) {
+            console.error('추천 데이터 저장 오류:', insertError);
+          } else {
+            console.log(`회차 ${nextDrawNo} 추천 데이터 저장됨`);
+          }
+        }
+      }
+    } catch (saveError) {
+      console.error('추천 데이터 저장 중 오류:', saveError);
+      // 저장 실패해도 사용자에게는 추천 번호만 제공
+    }
+    
     res.status(200).json(recommendedNumbers);
   } catch (error) {
     console.error('Error:', error);

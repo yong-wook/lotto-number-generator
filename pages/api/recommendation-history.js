@@ -2,31 +2,47 @@ import { supabaseAdmin } from '../../lib/supabase';
 
 export default async function handler(req, res) {
   try {
-    // 1. 과거 추천 번호와 제외 번호 데이터 가져오기 (가정: recommendHistory 테이블이 있다고 가정)
-    // 실제 환경에서는 이 데이터를 저장하는 테이블을 생성해야 합니다
+    // 1. Supabase에서 과거 추천 번호와 제외 번호 데이터 가져오기
     const { data: historyData, error: historyError } = await supabaseAdmin
       .from('recommendHistory')
       .select('*')
       .order('week', { ascending: false })
       .limit(10); // 최근 10주 데이터
 
+    // 데이터베이스 오류 또는 테이블이 없는 경우
     if (historyError) {
       console.error('추천 히스토리 가져오기 오류:', historyError);
       
-      // 데이터가 없는 경우 또는 테이블이 없는 경우를 위한 가상 데이터
-      // 실제 환경에서는 이 부분을 적절히
+      // 테이블이 없거나 접근 권한 문제인 경우 더미 데이터로 대체
+      if (historyError.code === '42P01' || historyError.message.includes('does not exist') || 
+          historyError.code === '42501' || historyError.message.includes('permission denied')) {
+        const dummyData = generateDummyHistoryData();
+        return res.status(200).json(dummyData);
+      } 
+      
+      // 그 외 오류는 500 에러로 응답
+      return res.status(500).json({ error: historyError.message });
+    }
+
+    // 히스토리 데이터가 없는 경우 더미 데이터 반환
+    if (!historyData || historyData.length === 0) {
       const dummyData = generateDummyHistoryData();
       return res.status(200).json(dummyData);
     }
 
     // 2. 당첨 번호 데이터 가져오기
+    // 가져올 회차 번호들 추출
+    const weekNumbers = historyData.map(history => parseInt(history.week)).filter(week => !isNaN(week));
+    
     const { data: winningData, error: winningError } = await supabaseAdmin
       .from('lottoResults')
       .select('*')
-      .order('drwNo', { ascending: false })
-      .limit(10); // 최근 10주 당첨 데이터
+      .in('drwNo', weekNumbers);
 
-    if (winningError) throw winningError;
+    if (winningError) {
+      console.error('당첨 번호 가져오기 오류:', winningError);
+      return res.status(500).json({ error: winningError.message });
+    }
 
     // 3. 적중 여부 분석
     const analyzedData = analyzeMatchHistory(historyData, winningData);
@@ -43,28 +59,49 @@ export default async function handler(req, res) {
 
 // 당첨 번호와 추천/제외 번호 비교 분석
 function analyzeMatchHistory(historyData, winningData) {
-  // 실제 구현에서는 각 주차별 추천/제외 번호와 당첨 번호를 비교하여 적중률 계산
-  // 이 예제에서는 더미 데이터를 반환
-  return historyData.map((history, index) => {
-    const matchingWinningData = winningData.find(w => w.drwNo.toString() === history.week);
+  return historyData.map(history => {
+    // 회차 번호 정수 변환 (문자열로 저장된 경우 대비)
+    const historyWeek = parseInt(history.week);
     
+    // 해당 회차의 당첨 정보 찾기
+    const matchingWinningData = winningData.find(w => w.drwNo === historyWeek);
+    
+    // 당첨 정보가 없으면 원본 데이터 반환
     if (!matchingWinningData) return history;
     
-    const winningNumbers = matchingWinningData.numbers.split(',').map(Number);
-    const recommendedPair = history.recommendedPair || [];
-    const excludedNumbers = history.excludedNumbers || [];
+    // 당첨 번호 추출 및 숫자 배열로 변환
+    let winningNumbers;
+    if (typeof matchingWinningData.numbers === 'string') {
+      // 문자열로 저장된 경우 (예: "1,2,3,4,5,6")
+      winningNumbers = matchingWinningData.numbers.split(',').map(Number);
+    } else if (Array.isArray(matchingWinningData.numbers)) {
+      // 이미 배열인 경우
+      winningNumbers = matchingWinningData.numbers;
+    } else {
+      // drwtNo1 ~ drwtNo6 형식으로 저장된 경우
+      winningNumbers = [];
+      for (let i = 1; i <= 6; i++) {
+        const num = matchingWinningData[`drwtNo${i}`];
+        if (num) winningNumbers.push(Number(num));
+      }
+    }
+    
+    // 보너스 번호가 있으면 추가
+    if (matchingWinningData.bnusNo) {
+      winningNumbers.push(Number(matchingWinningData.bnusNo));
+    }
     
     // 추천 번호 적중 검사
-    const recommendHits = recommendedPair.filter(num => winningNumbers.includes(num));
+    const recommendHits = history.recommendedPair.filter(num => winningNumbers.includes(Number(num)));
     
     // 제외 번호 적중 검사 (제외했는데 당첨됨 = 실패)
-    const excludeHits = excludedNumbers.filter(num => winningNumbers.includes(num));
+    const excludeHits = history.excludedNumbers.filter(num => winningNumbers.includes(Number(num)));
     
     return {
       ...history,
       recommendHits: recommendHits.length,
       excludeFailures: excludeHits.length,
-      winningNumbers
+      winningNumbers // 당첨 번호도 함께 반환
     };
   });
 }
@@ -102,7 +139,7 @@ function generateDummyHistoryData() {
     }
     excludedNumbers.sort((a, b) => a - b);
     
-    // 당첨 번호 6개 생성
+    // 당첨 번호 6개 생성 (실제 데이터가 있으면 대체됨)
     const winningNumbers = [];
     while (winningNumbers.length < 6) {
       const num = Math.floor(Math.random() * 45) + 1;
