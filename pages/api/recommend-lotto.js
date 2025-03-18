@@ -34,48 +34,115 @@ export default async function handler(req, res) {
     // recommendHistory 테이블에 저장
     try {
       // 먼저 이 회차에 대한 데이터가 이미 있는지 확인
-      const { data: existingEntry, error: checkError } = await supabaseAdmin
+      // maybeSingle()을 사용하지 않고 모든 일치하는 레코드를 가져옴
+      const { data: existingEntries, error: checkError } = await supabaseAdmin
         .from('recommendHistory')
         .select('*')
         .eq('week', nextDrawNo.toString())
-        .maybeSingle();
+        .order('createdAt', { ascending: false }); // 최신 항목이 먼저 오도록 정렬
         
-      if (checkError && !checkError.message.includes('does not exist')) {
+      if (checkError) {
         console.error('기존 추천 데이터 확인 오류:', checkError);
+        // 오류 발생 시 계속 진행하여 새 데이터 생성
       } else {
-        if (existingEntry) {
-          // 기존 데이터가 있을 경우, 새 추천 데이터와 비교
-          const isRecommendedPairChanged = !arraysEqual(
-            existingEntry.recommendedPair || [], 
-            recommendedNumbers.recommendedPair || []
-          );
-          
-          const isExcludedNumbersChanged = !arraysEqual(
-            existingEntry.excludedNumbers || [], 
-            recommendedNumbers.excludedNumbers || []
-          );
-          
-          // 데이터가 변경된 경우에만 업데이트
-          if (isRecommendedPairChanged || isExcludedNumbersChanged) {
-            const { error: updateError } = await supabaseAdmin
-              .from('recommendHistory')
-              .update({
-                date: formattedDate,
-                recommendedPair: recommendedNumbers.recommendedPair,
-                excludedNumbers: recommendedNumbers.excludedNumbers,
-                updatedAt: new Date().toISOString()
-              })
-              .eq('id', existingEntry.id);
-              
-            if (updateError) {
-              console.error('추천 데이터 업데이트 오류:', updateError);
-            } else {
-              console.log(`회차 ${nextDrawNo} 추천 데이터 변경되어 업데이트됨`);
+        // 중복 데이터 처리: 동일한 주에 대한 여러 레코드가 있을 경우
+        if (existingEntries && existingEntries.length > 0) {
+          // 여러 개의 중복 레코드가 있는 경우, 가장 최신 것만 유지하고 나머지는 삭제
+          if (existingEntries.length > 1) {
+            console.log(`경고: 회차 ${nextDrawNo}에 대한 중복 데이터 ${existingEntries.length}개 발견`);
+            
+            // 가장 최신 항목을 제외한 나머지 항목 ID 추출
+            const latestEntry = existingEntries[0]; // 이미 createdAt 기준으로 정렬됨
+            const duplicateIds = existingEntries.slice(1).map(item => item.id);
+            
+            // 중복 항목 삭제
+            if (duplicateIds.length > 0) {
+              const { error: deleteError } = await supabaseAdmin
+                .from('recommendHistory')
+                .delete()
+                .in('id', duplicateIds);
+                
+              if (deleteError) {
+                console.error('중복 데이터 삭제 오류:', deleteError);
+              } else {
+                console.log(`${duplicateIds.length}개의 중복 데이터가 삭제됨`);
+              }
             }
-          } else {
-            console.log(`회차 ${nextDrawNo} 추천 데이터 변경 없음, 업데이트 건너뜀`);
+            
+            // 남은 최신 항목 기준으로 비교 및 업데이트
+            const existingEntry = latestEntry;
+            
+            // 기존 데이터와 새 추천 데이터 비교
+            const isRecommendedPairChanged = !arraysEqual(
+              existingEntry.recommendedPair || [], 
+              recommendedNumbers.recommendedPair || []
+            );
+            
+            const isExcludedNumbersChanged = !arraysEqual(
+              existingEntry.excludedNumbers || [], 
+              recommendedNumbers.excludedNumbers || []
+            );
+            
+            // 데이터가 변경된 경우에만 업데이트
+            if (isRecommendedPairChanged || isExcludedNumbersChanged) {
+              const { error: updateError } = await supabaseAdmin
+                .from('recommendHistory')
+                .update({
+                  date: formattedDate,
+                  recommendedPair: recommendedNumbers.recommendedPair,
+                  excludedNumbers: recommendedNumbers.excludedNumbers,
+                  updatedAt: new Date().toISOString()
+                })
+                .eq('id', existingEntry.id);
+                
+              if (updateError) {
+                console.error('추천 데이터 업데이트 오류:', updateError);
+              } else {
+                console.log(`회차 ${nextDrawNo} 추천 데이터 변경되어 업데이트됨`);
+              }
+            } else {
+              console.log(`회차 ${nextDrawNo} 추천 데이터 변경 없음, 업데이트 건너뜀`);
+            }
+          } 
+          // 정확히 한 개의 레코드만 있는 정상적인 경우
+          else {
+            const existingEntry = existingEntries[0];
+            
+            // 기존 데이터와 새 추천 데이터 비교
+            const isRecommendedPairChanged = !arraysEqual(
+              existingEntry.recommendedPair || [], 
+              recommendedNumbers.recommendedPair || []
+            );
+            
+            const isExcludedNumbersChanged = !arraysEqual(
+              existingEntry.excludedNumbers || [], 
+              recommendedNumbers.excludedNumbers || []
+            );
+            
+            // 데이터가 변경된 경우에만 업데이트
+            if (isRecommendedPairChanged || isExcludedNumbersChanged) {
+              const { error: updateError } = await supabaseAdmin
+                .from('recommendHistory')
+                .update({
+                  date: formattedDate,
+                  recommendedPair: recommendedNumbers.recommendedPair,
+                  excludedNumbers: recommendedNumbers.excludedNumbers,
+                  updatedAt: new Date().toISOString()
+                })
+                .eq('id', existingEntry.id);
+                
+              if (updateError) {
+                console.error('추천 데이터 업데이트 오류:', updateError);
+              } else {
+                console.log(`회차 ${nextDrawNo} 추천 데이터 변경되어 업데이트됨`);
+              }
+            } else {
+              console.log(`회차 ${nextDrawNo} 추천 데이터 변경 없음, 업데이트 건너뜀`);
+            }
           }
-        } else {
+        } 
+        // 데이터가 없는 경우 새 데이터 삽입
+        else {
           // 새 데이터 삽입
           const { error: insertError } = await supabaseAdmin
             .from('recommendHistory')
