@@ -41,11 +41,20 @@ export default async function handler(req, res) {
 
     if (winningError) {
       console.error('당첨 번호 가져오기 오류:', winningError);
-      return res.status(500).json({ error: winningError.message });
+      // 당첨 번호를 가져오지 못해도 일단 계속 진행
+      // 각 항목에 빈 당첨 번호 배열 추가
+      const dataWithEmptyWinningNumbers = historyData.map(history => ({
+        ...history,
+        winningNumbers: [],
+        recommendHits: 0,
+        excludeFailures: 0
+      }));
+      
+      return res.status(200).json(dataWithEmptyWinningNumbers);
     }
 
     // 3. 적중 여부 분석
-    const analyzedData = analyzeMatchHistory(historyData, winningData);
+    const analyzedData = analyzeMatchHistory(historyData, winningData || []);
     
     res.status(200).json(analyzedData);
   } catch (error) {
@@ -60,48 +69,55 @@ export default async function handler(req, res) {
 // 당첨 번호와 추천/제외 번호 비교 분석
 function analyzeMatchHistory(historyData, winningData) {
   return historyData.map(history => {
+    // 기본값 추가 (winningNumbers가 없는 경우를 대비)
+    let winningNumbers = [];
+    let recommendHits = 0;
+    let excludeFailures = 0;
+    
     // 회차 번호 정수 변환 (문자열로 저장된 경우 대비)
     const historyWeek = parseInt(history.week);
     
     // 해당 회차의 당첨 정보 찾기
     const matchingWinningData = winningData.find(w => w.drwNo === historyWeek);
     
-    // 당첨 정보가 없으면 원본 데이터 반환
-    if (!matchingWinningData) return history;
-    
-    // 당첨 번호 추출 및 숫자 배열로 변환
-    let winningNumbers;
-    if (typeof matchingWinningData.numbers === 'string') {
-      // 문자열로 저장된 경우 (예: "1,2,3,4,5,6")
-      winningNumbers = matchingWinningData.numbers.split(',').map(Number);
-    } else if (Array.isArray(matchingWinningData.numbers)) {
-      // 이미 배열인 경우
-      winningNumbers = matchingWinningData.numbers;
-    } else {
-      // drwtNo1 ~ drwtNo6 형식으로 저장된 경우
-      winningNumbers = [];
-      for (let i = 1; i <= 6; i++) {
-        const num = matchingWinningData[`drwtNo${i}`];
-        if (num) winningNumbers.push(Number(num));
+    // 당첨 정보가 있는 경우에만 처리
+    if (matchingWinningData) {
+      // 당첨 번호 추출 및 숫자 배열로 변환
+      if (typeof matchingWinningData.numbers === 'string') {
+        // 문자열로 저장된 경우 (예: "1,2,3,4,5,6")
+        winningNumbers = matchingWinningData.numbers.split(',').map(Number);
+      } else if (Array.isArray(matchingWinningData.numbers)) {
+        // 이미 배열인 경우
+        winningNumbers = matchingWinningData.numbers;
+      } else {
+        // drwtNo1 ~ drwtNo6 형식으로 저장된 경우
+        for (let i = 1; i <= 6; i++) {
+          const num = matchingWinningData[`drwtNo${i}`];
+          if (num) winningNumbers.push(Number(num));
+        }
       }
+      
+      // 보너스 번호가 있으면 추가
+      if (matchingWinningData.bnusNo) {
+        winningNumbers.push(Number(matchingWinningData.bnusNo));
+      }
+      
+      // 안전 처리: recommendedPair와 excludedNumbers가 배열인지 확인
+      const recommendedPair = Array.isArray(history.recommendedPair) ? history.recommendedPair : [];
+      const excludedNumbers = Array.isArray(history.excludedNumbers) ? history.excludedNumbers : [];
+      
+      // 추천 번호 적중 검사
+      recommendHits = recommendedPair.filter(num => winningNumbers.includes(Number(num))).length;
+      
+      // 제외 번호 적중 검사 (제외했는데 당첨됨 = 실패)
+      excludeFailures = excludedNumbers.filter(num => winningNumbers.includes(Number(num))).length;
     }
-    
-    // 보너스 번호가 있으면 추가
-    if (matchingWinningData.bnusNo) {
-      winningNumbers.push(Number(matchingWinningData.bnusNo));
-    }
-    
-    // 추천 번호 적중 검사
-    const recommendHits = history.recommendedPair.filter(num => winningNumbers.includes(Number(num)));
-    
-    // 제외 번호 적중 검사 (제외했는데 당첨됨 = 실패)
-    const excludeHits = history.excludedNumbers.filter(num => winningNumbers.includes(Number(num)));
     
     return {
       ...history,
-      recommendHits: recommendHits.length,
-      excludeFailures: excludeHits.length,
-      winningNumbers // 당첨 번호도 함께 반환
+      winningNumbers,
+      recommendHits,
+      excludeFailures
     };
   });
 }
@@ -150,10 +166,10 @@ function generateDummyHistoryData() {
     winningNumbers.sort((a, b) => a - b);
     
     // 추천 번호 적중 검사
-    const recommendHits = recommendedPair.filter(num => winningNumbers.includes(num));
+    const recommendHits = recommendedPair.filter(num => winningNumbers.includes(num)).length;
     
     // 제외 번호 적중 검사 (제외했는데 당첨됨 = 실패)
-    const excludeFailures = excludedNumbers.filter(num => winningNumbers.includes(num));
+    const excludeFailures = excludedNumbers.filter(num => winningNumbers.includes(num)).length;
     
     weeks.push({
       id: i + 1,
@@ -162,8 +178,8 @@ function generateDummyHistoryData() {
       recommendedPair,
       excludedNumbers,
       winningNumbers,
-      recommendHits: recommendHits.length,
-      excludeFailures: excludeFailures.length
+      recommendHits,
+      excludeFailures
     });
   }
   

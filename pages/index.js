@@ -358,10 +358,10 @@ export default function Home() {
                       <div className="history-numbers-section">
                         <h5>추천 번호</h5>
                         <div className="history-numbers">
-                          {history.recommendedPair.map((number, idx) => (
+                          {(history.recommendedPair || []).map((number, idx) => (
                             <span
                               key={idx}
-                              className={`number ${history.winningNumbers.includes(number) ? 'hit' : ''}`}
+                              className={`number ${(history.winningNumbers || []).includes(number) ? 'hit' : ''}`}
                               style={{ backgroundColor: getBackgroundColor(number) }}
                             >
                               {number}
@@ -373,10 +373,10 @@ export default function Home() {
                       <div className="history-numbers-section">
                         <h5>제외 번호</h5>
                         <div className="history-numbers">
-                          {history.excludedNumbers.map((number, idx) => (
+                          {(history.excludedNumbers || []).map((number, idx) => (
                             <span
                               key={idx}
-                              className={`number ${history.winningNumbers.includes(number) ? 'missed' : ''}`}
+                              className={`number ${(history.winningNumbers || []).includes(number) ? 'missed' : ''}`}
                               style={{ backgroundColor: getBackgroundColor(number) }}
                             >
                               {number}
@@ -388,7 +388,7 @@ export default function Home() {
                       <div className="history-numbers-section">
                         <h5>당첨 번호</h5>
                         <div className="history-numbers">
-                          {history.winningNumbers.map((number, idx) => (
+                          {(history.winningNumbers || []).map((number, idx) => (
                             <span
                               key={idx}
                               className="number"
