@@ -21,6 +21,10 @@ export default function Home() {
   const [recommendedPair, setRecommendedPair] = useState([]);
   const [excludedNumbers, setExcludedNumbers] = useState([]);
   const [currentWeekInfo, setCurrentWeekInfo] = useState('');
+  // 히스토리 관련 상태 추가
+  const [recommendHistory, setRecommendHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const numbersRef = useRef(null);
   
   // 마지막으로 눌린 버튼을 추하는 상태 추가
@@ -89,6 +93,28 @@ export default function Home() {
     }
     setShowPastNumbers(!showPastNumbers);
   }, [showPastNumbers,currentDrawNo]);
+
+  // 추천 히스토리 가져오기 함수 추가
+  const fetchRecommendHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const response = await fetch('/api/recommendation-history');
+      const data = await response.json();
+      setRecommendHistory(data);
+    } catch (error) {
+      console.error('추천 히스토리 가져오기 실패:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  // 히스토리 표시 토글 함수
+  const toggleHistory = useCallback(() => {
+    if (!showHistory) {
+      fetchRecommendHistory();
+    }
+    setShowHistory(!showHistory);
+  }, [showHistory]);
 
   useEffect(() => {
     fetchCurrentLottoNumber();
@@ -268,6 +294,11 @@ export default function Home() {
           {showGenerator ? '번호 생성기 숨기기' : '번호 생성기 보기'}
         </button>
 
+        {/* 히스토리 표시 버튼 추가 */}
+        <button onClick={toggleHistory} className="action-button history-button">
+          {showHistory ? '추천 히스토리 숨기기' : '추천 히스토리 보기'}
+        </button>
+
         {/* 고정 추천수와 고정 제외수 정보 섹션 */}
         {recommendedPair.length > 0 && excludedNumbers.length > 0 && (
           <div className="recommendation-info">
@@ -302,6 +333,79 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* 히스토리 섹션 추가 */}
+        {showHistory && (
+          <div className="history-section">
+            <h3>추천/제외 번호 적중 히스토리</h3>
+            {loadingHistory ? (
+              <p className="loading-message">히스토리 로딩 중...</p>
+            ) : recommendHistory.length > 0 ? (
+              <div className="history-container">
+                {recommendHistory.map((history, index) => (
+                  <div key={index} className="history-item">
+                    <div className="history-header">
+                      <h4>{history.week}회차 ({history.date})</h4>
+                      <div className="history-stats">
+                        <span className="stat-item success">추천 적중: {history.recommendHits}/2</span>
+                        <span className="stat-item failure">제외 실패: {history.excludeFailures}/6</span>
+                      </div>
+                    </div>
+
+                    <div className="history-numbers-grid">
+                      <div className="history-numbers-section">
+                        <h5>추천 번호</h5>
+                        <div className="history-numbers">
+                          {history.recommendedPair.map((number, idx) => (
+                            <span
+                              key={idx}
+                              className={`number ${history.winningNumbers.includes(number) ? 'hit' : ''}`}
+                              style={{ backgroundColor: getBackgroundColor(number) }}
+                            >
+                              {number}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="history-numbers-section">
+                        <h5>제외 번호</h5>
+                        <div className="history-numbers">
+                          {history.excludedNumbers.map((number, idx) => (
+                            <span
+                              key={idx}
+                              className={`number ${history.winningNumbers.includes(number) ? 'missed' : ''}`}
+                              style={{ backgroundColor: getBackgroundColor(number) }}
+                            >
+                              {number}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="history-numbers-section">
+                        <h5>당첨 번호</h5>
+                        <div className="history-numbers">
+                          {history.winningNumbers.map((number, idx) => (
+                            <span
+                              key={idx}
+                              className="number"
+                              style={{ backgroundColor: getBackgroundColor(number) }}
+                            >
+                              {number}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p>히스토리 데이터가 없습니다.</p>
+            )}
           </div>
         )}
 
@@ -831,6 +935,135 @@ export default function Home() {
           display: flex;
           align-items: center;
           justify-content: center;
+        }
+
+        /* 히스토리 섹션 스타일 */
+        .history-section {
+          width: 100%;
+          margin: 1rem 0;
+          background-color: rgba(255, 255, 255, 0.9);
+          padding: 1rem;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-button {
+          margin-bottom: 1rem;
+        }
+
+        .history-container {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .history-item {
+          padding: 1rem;
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          background-color: rgba(255, 255, 255, 0.7);
+        }
+
+        .history-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.5rem;
+          flex-wrap: wrap;
+        }
+
+        .history-header h4 {
+          margin: 0;
+          font-size: 1.1rem;
+        }
+
+        .history-stats {
+          display: flex;
+          gap: 1rem;
+        }
+
+        .stat-item {
+          padding: 0.3rem 0.6rem;
+          border-radius: 4px;
+          font-size: 0.9rem;
+          font-weight: bold;
+        }
+
+        .success {
+          background-color: rgba(76, 175, 80, 0.2);
+          color: #2e7d32;
+        }
+
+        .failure {
+          background-color: rgba(244, 67, 54, 0.2);
+          color: #c62828;
+        }
+
+        .history-numbers-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 1rem;
+        }
+
+        .history-numbers-section {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .history-numbers-section h5 {
+          margin: 0.5rem 0;
+          font-size: 0.9rem;
+        }
+
+        .history-numbers {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+
+        .number.hit {
+          border: 3px solid gold;
+          box-shadow: 0 0 5px gold;
+        }
+
+        .number.missed {
+          border: 3px solid #f44336;
+          box-shadow: 0 0 5px #f44336;
+        }
+
+        /* 다크 모드에서 히스토리 섹션 스타일 */
+        .dark-mode .history-section {
+          background-color: #000000;
+          border: 1px solid #333333;
+        }
+
+        .dark-mode .history-section h3 {
+          color: #6FCF75;
+          font-weight: bold;
+          text-shadow: 0 0 2px rgba(255, 255, 255, 0.2);
+        }
+
+        .dark-mode .history-item {
+          background-color: #1a1a1a;
+          border-color: #333333;
+        }
+
+        .dark-mode .history-header h4 {
+          color: #ffffff;
+        }
+
+        .dark-mode .history-numbers-section h5 {
+          color: #cccccc;
+        }
+
+        .dark-mode .success {
+          background-color: rgba(76, 175, 80, 0.1);
+          color: #81c784;
+        }
+
+        .dark-mode .failure {
+          background-color: rgba(244, 67, 54, 0.1);
+          color: #e57373;
         }
       `}</style>
     </div>
