@@ -7,7 +7,7 @@ export default async function handler(req, res) {
       .from('recommendHistory')
       .select('*')
       .order('week', { ascending: false })
-      .limit(10); // 최근 10주 데이터
+      .limit(20); // 충분한 데이터를 가져와서 필터링할 수 있도록 더 많은 데이터 로드
 
     // 데이터베이스 오류 또는 테이블이 없는 경우
     if (historyError) {
@@ -30,9 +30,25 @@ export default async function handler(req, res) {
       return res.status(200).json(dummyData);
     }
 
+    // 중복 회차 제거 (각 회차마다 첫 번째 항목만 유지)
+    const uniqueWeekData = [];
+    const processedWeeks = new Set();
+
+    for (const item of historyData) {
+      if (!processedWeeks.has(item.week)) {
+        uniqueWeekData.push(item);
+        processedWeeks.add(item.week);
+      }
+    }
+
+    // 최근 10개 항목으로 제한
+    const limitedData = uniqueWeekData.slice(0, 10);
+
+    console.log(`원본 데이터 ${historyData.length}개 중 중복 제거 후 ${uniqueWeekData.length}개, 최종 ${limitedData.length}개 항목 로드`);
+
     // 2. 당첨 번호 데이터 가져오기
     // 가져올 회차 번호들 추출
-    const weekNumbers = historyData.map(history => parseInt(history.week)).filter(week => !isNaN(week));
+    const weekNumbers = limitedData.map(history => parseInt(history.week)).filter(week => !isNaN(week));
     
     const { data: winningData, error: winningError } = await supabaseAdmin
       .from('lottoResults')
@@ -43,7 +59,7 @@ export default async function handler(req, res) {
       console.error('당첨 번호 가져오기 오류:', winningError);
       // 당첨 번호를 가져오지 못해도 일단 계속 진행
       // 각 항목에 빈 당첨 번호 배열 추가
-      const dataWithEmptyWinningNumbers = historyData.map(history => ({
+      const dataWithEmptyWinningNumbers = limitedData.map(history => ({
         ...history,
         winningNumbers: [],
         recommendHits: 0,
@@ -54,7 +70,7 @@ export default async function handler(req, res) {
     }
 
     // 3. 적중 여부 분석
-    const analyzedData = analyzeMatchHistory(historyData, winningData || []);
+    const analyzedData = analyzeMatchHistory(limitedData, winningData || []);
     
     res.status(200).json(analyzedData);
   } catch (error) {
