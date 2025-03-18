@@ -29,6 +29,11 @@ export default function Home() {
   
   // 마지막으로 눌린 버튼을 추하는 상태 추가
   const [lastButtonPressed, setLastButtonPressed] = useState(null);
+  
+  // 암호 관련 상태 추가
+  const [historyPassword, setHistoryPassword] = useState('');
+  const [isPasswordCorrect, setIsPasswordCorrect] = useState(false);
+  const [showPasswordInput, setShowPasswordInput] = useState(false);
 
   // 현재 날짜를 기반으로 "몇년 몇월의 몇째 주" 형태로 포맷팅하는 함수
   const getCurrentWeekInfo = () => {
@@ -108,13 +113,30 @@ export default function Home() {
     }
   };
 
-  // 히스토리 표시 토글 함수
+  // 히스토리 표시 토글 함수 수정
   const toggleHistory = useCallback(() => {
     if (!showHistory) {
-      fetchRecommendHistory();
+      if (!isPasswordCorrect) {
+        // 암호가 맞지 않으면 암호 입력창 표시
+        setShowPasswordInput(true);
+      } else {
+        // 암호가 이미 맞았다면 히스토리 데이터 가져오기
+        fetchRecommendHistory();
+      }
     }
     setShowHistory(!showHistory);
-  }, [showHistory]);
+  }, [showHistory, isPasswordCorrect]);
+
+  // 암호 확인 함수 추가
+  const checkPassword = useCallback(() => {
+    if (historyPassword === '열려라 참깨') {
+      setIsPasswordCorrect(true);
+      setShowPasswordInput(false);
+      fetchRecommendHistory();
+    } else {
+      alert('암호가 맞지 않습니다.');
+    }
+  }, [historyPassword]);
 
   useEffect(() => {
     fetchCurrentLottoNumber();
@@ -299,6 +321,21 @@ export default function Home() {
           {showHistory ? '추천 히스토리 숨기기' : '추천 히스토리 보기'}
         </button>
 
+        {/* 암호 입력 창 추가 */}
+        {showPasswordInput && !isPasswordCorrect && (
+          <div className="password-container">
+            <input
+              type="password"
+              value={historyPassword}
+              onChange={(e) => setHistoryPassword(e.target.value)}
+              placeholder="히스토리 접근 암호를 입력하세요"
+              className="password-input"
+              onKeyPress={(e) => e.key === 'Enter' && checkPassword()}
+            />
+            <button onClick={checkPassword} className="password-button">확인</button>
+          </div>
+        )}
+
         {/* 고정 추천수와 고정 제외수 정보 섹션 */}
         {recommendedPair.length > 0 && excludedNumbers.length > 0 && (
           <div className="recommendation-info">
@@ -336,8 +373,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* 히스토리 섹션 추가 */}
-        {showHistory && (
+        {/* 히스토리 섹션은 암호가 맞았을 때만 표시 */}
+        {showHistory && isPasswordCorrect && (
           <div className="history-section">
             <h3>추천/제외 번호 적중 히스토리</h3>
             {loadingHistory ? (
@@ -1064,6 +1101,42 @@ export default function Home() {
         .dark-mode .failure {
           background-color: rgba(244, 67, 54, 0.1);
           color: #e57373;
+        }
+
+        /* 암호 입력 관련 스타일 추가 */
+        .password-container {
+          margin: 1rem 0;
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .password-input {
+          padding: 0.5rem;
+          border-radius: 4px;
+          border: 2px solid #4CAF50;
+          font-size: 1rem;
+        }
+
+        .dark-mode .password-input {
+          background-color: #333;
+          color: white;
+          border-color: #6FCF75;
+        }
+
+        .password-button {
+          padding: 0.5rem 1rem;
+          background-color: #4CAF50;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 1rem;
+        }
+
+        .password-button:hover {
+          background-color: #45a049;
         }
       `}</style>
     </div>
