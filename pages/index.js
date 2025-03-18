@@ -317,9 +317,13 @@ export default function Home() {
           {showGenerator ? '번호 생성기 숨기기' : '번호 생성기 보기'}
         </button>
 
-        {/* 히스토리 표시 버튼 추가 */}
-        <button onClick={toggleHistory} className="action-button history-button">
-          {showHistory ? '추천 히스토리 숨기기' : '추천 히스토리 보기'}
+        {/* 히스토리 표시 버튼 추가 - 은밀하게 변경 */}
+        <button 
+          onClick={toggleHistory} 
+          className="subtle-history-button"
+          title={showHistory ? '추천 히스토리 숨기기' : '추천 히스토리 보기'}
+        >
+          <span className="history-icon">&#8634;</span>
         </button>
 
         {/* 암호 입력 창 추가 */}
@@ -1145,6 +1149,48 @@ export default function Home() {
 
         .password-button:hover {
           background-color: #45a049;
+        }
+
+        /* 은밀한 히스토리 버튼 스타일 */
+        .subtle-history-button {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background-color: rgba(76, 175, 80, 0.8);
+          color: white;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+          z-index: 100;
+          opacity: 0.7;
+        }
+
+        .subtle-history-button:hover {
+          transform: rotate(180deg);
+          background-color: rgba(76, 175, 80, 1);
+          opacity: 1;
+          box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .history-icon {
+          font-size: 20px;
+          font-weight: bold;
+        }
+        
+        .dark-mode .subtle-history-button {
+          background-color: rgba(111, 207, 117, 0.8);
+          color: black;
+        }
+
+        .dark-mode .subtle-history-button:hover {
+          background-color: rgba(111, 207, 117, 1);
         }
       `}</style>
     </div>
