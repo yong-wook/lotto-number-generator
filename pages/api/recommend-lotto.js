@@ -44,20 +44,36 @@ export default async function handler(req, res) {
         console.error('기존 추천 데이터 확인 오류:', checkError);
       } else {
         if (existingEntry) {
-          // 기존 데이터 업데이트
-          const { error: updateError } = await supabaseAdmin
-            .from('recommendHistory')
-            .update({
-              date: formattedDate,
-              recommendedPair: recommendedNumbers.recommendedPair,
-              excludedNumbers: recommendedNumbers.excludedNumbers,
-            })
-            .eq('id', existingEntry.id);
-            
-          if (updateError) {
-            console.error('추천 데이터 업데이트 오류:', updateError);
+          // 기존 데이터가 있을 경우, 새 추천 데이터와 비교
+          const isRecommendedPairChanged = !arraysEqual(
+            existingEntry.recommendedPair || [], 
+            recommendedNumbers.recommendedPair || []
+          );
+          
+          const isExcludedNumbersChanged = !arraysEqual(
+            existingEntry.excludedNumbers || [], 
+            recommendedNumbers.excludedNumbers || []
+          );
+          
+          // 데이터가 변경된 경우에만 업데이트
+          if (isRecommendedPairChanged || isExcludedNumbersChanged) {
+            const { error: updateError } = await supabaseAdmin
+              .from('recommendHistory')
+              .update({
+                date: formattedDate,
+                recommendedPair: recommendedNumbers.recommendedPair,
+                excludedNumbers: recommendedNumbers.excludedNumbers,
+                updatedAt: new Date().toISOString()
+              })
+              .eq('id', existingEntry.id);
+              
+            if (updateError) {
+              console.error('추천 데이터 업데이트 오류:', updateError);
+            } else {
+              console.log(`회차 ${nextDrawNo} 추천 데이터 변경되어 업데이트됨`);
+            }
           } else {
-            console.log(`회차 ${nextDrawNo} 추천 데이터 업데이트됨`);
+            console.log(`회차 ${nextDrawNo} 추천 데이터 변경 없음, 업데이트 건너뜀`);
           }
         } else {
           // 새 데이터 삽입
@@ -68,6 +84,7 @@ export default async function handler(req, res) {
               date: formattedDate,
               recommendedPair: recommendedNumbers.recommendedPair,
               excludedNumbers: recommendedNumbers.excludedNumbers,
+              createdAt: new Date().toISOString()
             });
             
           if (insertError) {
@@ -81,12 +98,29 @@ export default async function handler(req, res) {
       console.error('추천 데이터 저장 중 오류:', saveError);
       // 저장 실패해도 사용자에게는 추천 번호만 제공
     }
-    
+
     res.status(200).json(recommendedNumbers);
   } catch (error) {
     console.error('Error:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Server error' });
   }
+}
+
+// 두 배열이 동일한지 비교하는 헬퍼 함수
+function arraysEqual(arr1, arr2) {
+  // 길이가 다르면 다른 배열
+  if (arr1.length !== arr2.length) return false;
+  
+  // 배열 정렬 후 비교 (순서 상관없이 같은 요소들을 포함하는지 확인)
+  const sorted1 = [...arr1].sort((a, b) => a - b);
+  const sorted2 = [...arr2].sort((a, b) => a - b);
+  
+  // 모든 요소 비교
+  for (let i = 0; i < sorted1.length; i++) {
+    if (sorted1[i] !== sorted2[i]) return false;
+  }
+  
+  return true;
 }
 
 function getRecommendedNumbers(lottoData, recentData) {
