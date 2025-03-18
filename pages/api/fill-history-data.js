@@ -8,11 +8,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. 모든 로또 결과 데이터 가져오기
+    // 1. 최근 로또 결과 데이터만 가져오기 (최근 60개 회차)
     const { data: allLottoData, error: lottoError } = await supabaseAdmin
       .from('lottoResults')
       .select('*')
-      .order('drwNo', { ascending: true }); // 오래된 회차부터 정렬
+      .order('drwNo', { ascending: false }) // 최신 회차부터 정렬
+      .limit(60); // 최근 60개 회차만 가져옴
 
     if (lottoError) {
       console.error('로또 데이터 가져오기 오류:', lottoError);
@@ -22,6 +23,19 @@ export default async function handler(req, res) {
     if (!allLottoData || allLottoData.length === 0) {
       return res.status(404).json({ error: '로또 데이터가 없습니다' });
     }
+    
+    // 현재 날짜 확인
+    const currentDate = new Date();
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(currentDate.getFullYear() - 1);
+    
+    // 최근 1년 이내의 데이터만 필터링
+    const recentLottoData = allLottoData.filter(draw => {
+      const drawDate = new Date(draw.drwNoDate);
+      return drawDate >= oneYearAgo;
+    });
+    
+    console.log(`총 ${allLottoData.length}개 회차 중 최근 1년 내 ${recentLottoData.length}개 회차를 처리합니다.`);
 
     // 2. 히스토리 테이블에 이미 있는 회차 번호 조회
     const { data: existingHistory, error: historyError } = await supabaseAdmin
@@ -39,33 +53,43 @@ export default async function handler(req, res) {
       existingHistory.forEach(item => existingWeeks.add(item.week));
     }
 
-    // 3. 과거 50개 회차에 대해 소급 추천 번호 생성
-    const startIndex = Math.max(0, allLottoData.length - 60); // 최근 60개 회차부터 거꾸로
+    // 3. 최근 데이터부터 역순으로 처리
     const processedDraws = [];
     const errors = [];
+    
+    // 중복 회차 방지를 위한 Set
+    const processedDrawNos = new Set();
 
-    for (let i = allLottoData.length - 1; i >= startIndex; i--) {
-      const currentDraw = allLottoData[i];
+    for (const currentDraw of recentLottoData) {
+      const weekNumber = currentDraw.drwNo.toString();
       
-      // 이미 처리된 회차는 건너뛰기
-      if (existingWeeks.has(currentDraw.drwNo.toString())) {
-        console.log(`회차 ${currentDraw.drwNo}는 이미 처리됨. 건너뜀`);
+      // 이미 처리한 회차이거나 이미 히스토리에 있는 회차는 건너뛰기
+      if (processedDrawNos.has(weekNumber) || existingWeeks.has(weekNumber)) {
+        console.log(`회차 ${weekNumber}는 이미 처리됨. 건너뜀`);
         continue;
       }
+      
+      // 처리할 회차로 표시
+      processedDrawNos.add(weekNumber);
 
       try {
-        // 현재 회차 이전의 모든 로또 데이터
-        const pastData = allLottoData.slice(0, i);
+        // 해당 회차보다 이전의 모든 로또 데이터 (역순으로 정렬된 데이터에서 이후 항목들)
+        const index = allLottoData.findIndex(item => item.drwNo.toString() === weekNumber);
+        if (index === -1) continue;
         
-        // 현재 회차 이전 6주 데이터
-        const recentPastData = pastData.slice(Math.max(0, pastData.length - 6));
+        const pastData = allLottoData.slice(index + 1);
+        
+        // 이전 회차 중 최대 6주 데이터
+        const recentPastData = pastData.slice(0, 6);
         
         // 소급 추천 번호 계산
         const recommendedData = getRecommendedNumbers(pastData, recentPastData);
         
-        // 회차 정보와 날짜 가져오기
-        const weekNumber = currentDraw.drwNo.toString();
-        const drawDate = currentDraw.drwNoDate;
+        // 날짜 가져오기 및 검증
+        let drawDate = currentDraw.drwNoDate;
+        if (!drawDate || !isValidDate(drawDate)) {
+          drawDate = new Date().toISOString().split('T')[0]; // 유효하지 않은 날짜는 현재 날짜로 대체
+        }
         
         // 추천 데이터 저장
         const { error: insertError } = await supabaseAdmin
@@ -82,11 +106,11 @@ export default async function handler(req, res) {
           errors.push({ week: weekNumber, error: insertError.message });
         } else {
           processedDraws.push(weekNumber);
-          console.log(`회차 ${weekNumber} 추천 데이터 저장 완료`);
+          console.log(`회차 ${weekNumber} (${drawDate}) 추천 데이터 저장 완료`);
         }
       } catch (error) {
-        console.error(`회차 ${currentDraw.drwNo} 처리 중 오류:`, error);
-        errors.push({ week: currentDraw.drwNo.toString(), error: error.message });
+        console.error(`회차 ${weekNumber} 처리 중 오류:`, error);
+        errors.push({ week: weekNumber, error: error.message });
       }
     }
 
@@ -103,6 +127,12 @@ export default async function handler(req, res) {
   }
 }
 
+// 날짜 유효성 검사 함수
+function isValidDate(dateString) {
+  const date = new Date(dateString);
+  return !isNaN(date.getTime()) && date > new Date('2000-01-01') && date <= new Date();
+}
+
 // 소급 추천 번호 계산 함수
 function getRecommendedNumbers(lottoData, recentData) {
   const numberPairs = {};
@@ -111,7 +141,7 @@ function getRecommendedNumbers(lottoData, recentData) {
   
   // 가장 최근 당첨 번호 (현재 기준으로)
   if (recentData.length > 0) {
-    const latestDraw = recentData[recentData.length - 1];
+    const latestDraw = recentData[0]; // 최근 데이터 중 가장 최신 데이터
     const latestNumbers = latestDraw.numbers ? 
       latestDraw.numbers.split(',').map(Number) : 
       [1, 2, 3, 4, 5, 6].map(i => latestDraw[`drwtNo${i}`]).filter(Boolean).map(Number);
