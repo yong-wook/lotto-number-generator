@@ -129,7 +129,8 @@ export default function Home() {
 
   // 암호 확인 함수 추가
   const checkPassword = useCallback(() => {
-    if (historyPassword === '열려라 참깨') {
+    const trimmedPassword = historyPassword.trim();
+    if (trimmedPassword === '열려라 참깨') {
       setIsPasswordCorrect(true);
       setShowPasswordInput(false);
       fetchRecommendHistory();
@@ -325,12 +326,19 @@ export default function Home() {
         {showPasswordInput && !isPasswordCorrect && (
           <div className="password-container">
             <input
-              type="password"
+              type="text"
               value={historyPassword}
               onChange={(e) => setHistoryPassword(e.target.value)}
               placeholder="히스토리 접근 암호를 입력하세요"
               className="password-input"
-              onKeyPress={(e) => e.key === 'Enter' && checkPassword()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  // 한글 입력 완료 후 Enter 키 처리
+                  e.preventDefault();
+                  setTimeout(() => checkPassword(), 10);
+                }
+              }}
+              autoComplete="off"
             />
             <button onClick={checkPassword} className="password-button">확인</button>
           </div>
