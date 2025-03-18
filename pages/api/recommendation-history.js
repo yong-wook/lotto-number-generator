@@ -72,7 +72,15 @@ export default async function handler(req, res) {
     // 3. 적중 여부 분석
     const analyzedData = analyzeMatchHistory(limitedData, winningData || []);
     
-    res.status(200).json(analyzedData);
+    // 4. 당첨번호가 없는 회차(추첨이 진행되지 않은 회차) 제외
+    const finalData = analyzedData.filter(item => {
+      // 당첨 번호가 있고 배열이며 길이가 1 이상인 경우만 포함
+      return Array.isArray(item.winningNumbers) && item.winningNumbers.length > 0;
+    });
+    
+    console.log(`분석된 데이터 ${analyzedData.length}개 중 당첨번호가 있는 ${finalData.length}개 항목 최종 반환`);
+    
+    res.status(200).json(finalData);
   } catch (error) {
     console.error('Error:', error);
     
