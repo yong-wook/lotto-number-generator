@@ -16,11 +16,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: '회차 정보가 없습니다' });
     }
 
+    // 배열을 쉼표로 구분된 문자열로 변환
+    const numbersString = numbers.join(',');
+
     // lotto_numbers 테이블에 저장
     const { data, error } = await supabaseAdmin
       .from('lotto_numbers')
       .insert({
-        numbers: numbers,
+        numbers: numbersString,  // 문자열로 변환된 번호
         draw_round: draw_round
       })
       .select()
