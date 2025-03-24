@@ -183,42 +183,56 @@ export default function Home() {
     numbers.sort((a, b) => a - b);
     setLottoNumbers(numbers);
     setAnimationKey(prev => prev + 1);
-    setLastButtonPressed('generate'); // 생성하기 버튼 눌림
-    setShowGenerator(false); // 생성기 숨기기
+    setLastButtonPressed('generate');
+    setShowGenerator(false);
+  }, [excludeNumbers, includeNumbers]);
 
-    // 현재 회차 정보 가져오기
-    let drawRound = currentDrawNo;
-    if (!drawRound) {
+  const saveLottoNumbers = async () => {
+    const numbersToSave = lottoNumbers.length > 0 ? lottoNumbers : finalNumbers;
+    if (savedNumbers.length < 5 && numbersToSave.length > 0) {
+      // 현재 회차 정보 가져오기
+      let drawRound = currentDrawNo;
+      if (!drawRound) {
+        try {
+          const response = await fetch('/api/lotto');
+          const data = await response.json();
+          drawRound = data.drwNo;
+        } catch (error) {
+          console.error('현재 회차 정보 가져오기 실패:', error);
+          return;
+        }
+      }
+
+      // lotto_numbers 테이블에 저장
       try {
-        const response = await fetch('/api/lotto');
-        const data = await response.json();
-        drawRound = data.drwNo;
+        const response = await fetch('/api/save-lotto-numbers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            numbers: numbersToSave,
+            draw_round: drawRound + 1  // 다음 회차로 저장
+          }),
+        });
+
+        if (!response.ok) {
+          console.error('번호 저장 실패');
+          return;
+        }
+
+        setSavedNumbers(prev => {
+          const newSavedNumbers = [...prev, numbersToSave];
+          console.log('새로 저장된 번호:', newSavedNumbers);
+          return newSavedNumbers;
+        });
       } catch (error) {
-        console.error('현재 회차 정보 가져오기 실패:', error);
-        return;
+        console.error('번호 저장 중 오류:', error);
       }
+    } else {
+      alert('최대 5개까지 저장할 수 있습니다.');
     }
-
-    // lotto_numbers 테이블에 저장 (다음 회차로 저장)
-    try {
-      const response = await fetch('/api/save-lotto-numbers', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          numbers: numbers,
-          draw_round: drawRound + 1  // 다음 회차로 저장
-        }),
-      });
-
-      if (!response.ok) {
-        console.error('번호 저장 실패');
-      }
-    } catch (error) {
-      console.error('번호 저장 중 오류:', error);
-    }
-  }, [excludeNumbers, includeNumbers, currentDrawNo]);
+  };
 
   // AI 추천 번호 가져오기
   const fetchRecommendedNumbers = async () => {
@@ -261,19 +275,6 @@ export default function Home() {
     }
     setLastButtonPressed('recommend'); // AI 추천 버튼 눌림
     setShowGenerator(false); // 생성기 숨기기
-  };
-
-  const saveLottoNumbers = () => {
-    const numbersToSave = lottoNumbers.length > 0 ? lottoNumbers : finalNumbers;
-    if (savedNumbers.length < 5 && numbersToSave.length > 0) {
-        setSavedNumbers(prev => {
-            const newSavedNumbers = [...prev, numbersToSave];
-            console.log('새로 저장된 번호:', newSavedNumbers);
-            return newSavedNumbers;
-        });
-    } else {
-        alert('최대 5개까지 저장할 수 있습니다.');
-    }
   };
 
   const deleteSavedNumbers = (index) => {
