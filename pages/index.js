@@ -620,7 +620,7 @@ export default function Home() {
               />
             </div>
             <div className="action-buttons">
-              <button onClick={async () => await generateLottoNumbers()} className="generate-button">
+              <button onClick={() => generateLottoNumbers()} className="generate-button">
                 생성하기
               </button>
               <button onClick={fetchRecommendedNumbers} className="generate-button">
