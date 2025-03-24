@@ -188,15 +188,21 @@ export default function Home() {
   }, [excludeNumbers, includeNumbers]);
 
   const saveLottoNumbers = async () => {
+    console.log('saveLottoNumbers 함수 호출됨');
     const numbersToSave = lottoNumbers.length > 0 ? lottoNumbers : finalNumbers;
+    console.log('저장할 번호:', numbersToSave);
+    
     if (savedNumbers.length < 5 && numbersToSave.length > 0) {
       // 현재 회차 정보 가져오기
       let drawRound = currentDrawNo;
+      console.log('현재 회차:', drawRound);
+      
       if (!drawRound) {
         try {
           const response = await fetch('/api/lotto');
           const data = await response.json();
           drawRound = data.drwNo;
+          console.log('API에서 가져온 회차:', drawRound);
         } catch (error) {
           console.error('현재 회차 정보 가져오기 실패:', error);
           return;
@@ -205,6 +211,11 @@ export default function Home() {
 
       // lotto_numbers 테이블에 저장
       try {
+        console.log('API 호출 시도:', {
+          numbers: numbersToSave,
+          draw_round: drawRound + 1
+        });
+        
         const response = await fetch('/api/save-lotto-numbers', {
           method: 'POST',
           headers: {
@@ -215,6 +226,8 @@ export default function Home() {
             draw_round: drawRound + 1  // 다음 회차로 저장
           }),
         });
+
+        console.log('API 응답:', response.status);
 
         if (!response.ok) {
           console.error('번호 저장 실패');
