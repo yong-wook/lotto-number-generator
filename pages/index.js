@@ -496,11 +496,30 @@ export default function Home() {
         <div className="title-container">
           <h1 className="title">Use Wook`s 로또</h1>
           <button onClick={() => setIsDarkMode(!isDarkMode)} className="dark-mode-button">
-            {isDarkMode ? '☀️' : '🌙'} {/* 이모지로 변경 */}
+            {isDarkMode ? '☀️' : '🌙'}
           </button>
         </div>
         
-        {/* 번호 생성기 숨기기 버튼 추가 */}
+        {/* 테스트용 기록하기 버튼을 상단으로 이동 */}
+        <button 
+          onClick={testSaveNumbers}
+          style={{
+            margin: '20px 0',
+            padding: '15px 30px',
+            backgroundColor: '#ff4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '1.2rem',
+            fontWeight: 'bold',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+          }}
+        >
+          🔴 테스트용 기록하기
+        </button>
+
+        {/* 번호 생성기 숨기기 버튼 */}
         <button onClick={() => setShowGenerator(!showGenerator)} className="action-button">
           {showGenerator ? '번호 생성기 숨기기' : '번호 생성기 보기'}
         </button>
@@ -857,22 +876,6 @@ export default function Home() {
         </div>
         
         {renderGeneratedHistory()}
-
-        {/* 테스트용 기록하기 버튼 추가 */}
-        <button 
-          onClick={testSaveNumbers}
-          style={{
-            marginTop: '20px',
-            padding: '10px 20px',
-            backgroundColor: '#ff4444',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer'
-          }}
-        >
-          테스트용 기록하기
-        </button>
       </main>
 
       <style jsx>{`
