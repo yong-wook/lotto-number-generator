@@ -186,6 +186,19 @@ export default function Home() {
     setLastButtonPressed('generate'); // 생성하기 버튼 눌림
     setShowGenerator(false); // 생성기 숨기기
 
+    // 현재 회차 정보 가져오기
+    let drawRound = currentDrawNo;
+    if (!drawRound) {
+      try {
+        const response = await fetch('/api/lotto');
+        const data = await response.json();
+        drawRound = data.drwNo;
+      } catch (error) {
+        console.error('현재 회차 정보 가져오기 실패:', error);
+        return;
+      }
+    }
+
     // lotto_numbers 테이블에 저장
     try {
       const response = await fetch('/api/save-lotto-numbers', {
@@ -195,7 +208,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           numbers: numbers,
-          draw_round: currentDrawNo
+          draw_round: drawRound
         }),
       });
 
@@ -213,6 +226,14 @@ export default function Home() {
     setLottoNumbers([]); // 기존 생성된 번호 삭제
 
     try {
+      // 현재 회차 정보 가져오기
+      let drawRound = currentDrawNo;
+      if (!drawRound) {
+        const drawResponse = await fetch('/api/lotto');
+        const drawData = await drawResponse.json();
+        drawRound = drawData.drwNo;
+      }
+
       const response = await fetch('/api/recommend-lotto');
       const data = await response.json();
       console.log("추천 번호 데이터:", data);
@@ -228,7 +249,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           numbers: data.finalNumbers,
-          draw_round: currentDrawNo
+          draw_round: drawRound
         }),
       });
 
