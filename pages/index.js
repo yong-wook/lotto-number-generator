@@ -25,6 +25,9 @@ export default function Home() {
   const [recommendHistory, setRecommendHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [generatedHistory, setGeneratedHistory] = useState([]);
+  const [showGeneratedHistory, setShowGeneratedHistory] = useState(false);
+  const [loadingGeneratedHistory, setLoadingGeneratedHistory] = useState(false);
   const numbersRef = useRef(null);
   
   // 마지막으로 눌린 버튼을 추하는 상태 추가
@@ -166,7 +169,7 @@ export default function Home() {
   }, []);
 
   // 로또 번호 생성 수
-  const generateLottoNumbers = useCallback(() => {
+  const generateLottoNumbers = useCallback(async () => {
     const excluded = excludeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
     const included = includeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
     
@@ -182,7 +185,27 @@ export default function Home() {
     setAnimationKey(prev => prev + 1);
     setLastButtonPressed('generate'); // 생성하기 버튼 눌림
     setShowGenerator(false); // 생성기 숨기기
-  }, [excludeNumbers, includeNumbers]);
+
+    // lotto_numbers 테이블에 저장
+    try {
+      const response = await fetch('/api/save-lotto-numbers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          numbers: numbers,
+          draw_round: currentDrawNo
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('번호 저장 실패');
+      }
+    } catch (error) {
+      console.error('번호 저장 중 오류:', error);
+    }
+  }, [excludeNumbers, includeNumbers, currentDrawNo]);
 
   // AI 추천 번호 가져오기
   const fetchRecommendedNumbers = async () => {
@@ -196,6 +219,22 @@ export default function Home() {
       setFinalNumbers(data.finalNumbers); // 추천 번호를 배열로 설정
       setRecommendedPair(data.recommendedPair); // 추천수 저장
       setExcludedNumbers(data.excludedNumbers); // 제외수 저장
+
+      // lotto_numbers 테이블에 저장
+      const saveResponse = await fetch('/api/save-lotto-numbers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          numbers: data.finalNumbers,
+          draw_round: currentDrawNo
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        console.error('추천 번호 저장 실패');
+      }
     } catch (error) {
       console.error('추천 번호 가져오기 실패:', error);
     }
@@ -294,6 +333,82 @@ export default function Home() {
       generateLottoNumbers(); // 생성하기 기능 호출
     } else if (lastButtonPressed === 'recommend') {
       fetchRecommendedNumbers(); // AI 추천 기능 호출
+    }
+  };
+
+  // 생성된 번호 저장
+  const saveGeneratedNumbers = async () => {
+    const numbersToSave = lottoNumbers.length > 0 ? lottoNumbers : finalNumbers;
+    if (numbersToSave.length === 0) {
+      alert('저장할 번호가 없습니다.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/number-history', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          numbers: numbersToSave,
+          drawRound: currentDrawNo + 1, // 다음 회차를 위한 번호
+        }),
+      });
+
+      if (!response.ok) throw new Error('저장 실패');
+      
+      const data = await response.json();
+      alert('번호가 저장되었습니다.');
+      
+      // 저장된 번호 목록 새로고침
+      if (showGeneratedHistory) {
+        fetchGeneratedHistory();
+      }
+    } catch (error) {
+      console.error('번호 저장 실패:', error);
+      alert('번호 저장에 실패했습니다.');
+    }
+  };
+
+  // 저장된 번호 히스토리 조회
+  const fetchGeneratedHistory = async () => {
+    setLoadingGeneratedHistory(true);
+    try {
+      const response = await fetch('/api/number-history');
+      if (!response.ok) throw new Error('조회 실패');
+      
+      const data = await response.json();
+      setGeneratedHistory(data);
+    } catch (error) {
+      console.error('히스토리 조회 실패:', error);
+      alert('히스토리 조회에 실패했습니다.');
+    } finally {
+      setLoadingGeneratedHistory(false);
+    }
+  };
+
+  // 당첨 확인
+  const checkWinningNumbers = async (drawRound) => {
+    try {
+      const response = await fetch('/api/check-winning', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ drawRound }),
+      });
+
+      if (!response.ok) throw new Error('당첨 확인 실패');
+      
+      const data = await response.json();
+      alert(`${data.checked}개의 번호에 대한 당첨 확인이 완료되었습니다.`);
+      
+      // 히스토리 새로고침
+      fetchGeneratedHistory();
+    } catch (error) {
+      console.error('당첨 확인 실패:', error);
+      alert('당첨 확인에 실패했습니다.');
     }
   };
 
@@ -641,6 +756,34 @@ export default function Home() {
             )}
           </div>
         </div>
+
+        {/* 새로운 기능 UI 추가 */}
+        <div className="flex justify-between items-center mt-4 space-x-4">
+          <button
+            onClick={saveGeneratedNumbers}
+            className={`px-4 py-2 rounded-lg ${
+              (lottoNumbers.length > 0 || finalNumbers.length > 0)
+                ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                : 'bg-gray-300 cursor-not-allowed'
+            }`}
+            disabled={(lottoNumbers.length === 0 && finalNumbers.length === 0)}
+          >
+            번호 저장하기
+          </button>
+          <button
+            onClick={() => {
+              setShowGeneratedHistory(!showGeneratedHistory);
+              if (!showGeneratedHistory) {
+                fetchGeneratedHistory();
+              }
+            }}
+            className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
+          >
+            {showGeneratedHistory ? '히스토리 숨기기' : '히스토리 보기'}
+          </button>
+        </div>
+        
+        {renderGeneratedHistory()}
       </main>
 
       <style jsx>{`
