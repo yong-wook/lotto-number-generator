@@ -199,7 +199,7 @@ export default function Home() {
       }
     }
 
-    // lotto_numbers 테이블에 저장
+    // lotto_numbers 테이블에 저장 (다음 회차로 저장)
     try {
       const response = await fetch('/api/save-lotto-numbers', {
         method: 'POST',
@@ -208,7 +208,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           numbers: numbers,
-          draw_round: drawRound
+          draw_round: drawRound + 1  // 다음 회차로 저장
         }),
       });
 
@@ -241,7 +241,7 @@ export default function Home() {
       setRecommendedPair(data.recommendedPair); // 추천수 저장
       setExcludedNumbers(data.excludedNumbers); // 제외수 저장
 
-      // lotto_numbers 테이블에 저장
+      // lotto_numbers 테이블에 저장 (다음 회차로 저장)
       const saveResponse = await fetch('/api/save-lotto-numbers', {
         method: 'POST',
         headers: {
@@ -249,7 +249,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           numbers: data.finalNumbers,
-          draw_round: drawRound
+          draw_round: drawRound + 1  // 다음 회차로 저장
         }),
       });
 
