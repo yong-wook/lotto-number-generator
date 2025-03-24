@@ -166,7 +166,10 @@ export default async function handler(req, res) {
       // 저장 실패해도 사용자에게는 추천 번호만 제공
     }
 
-    res.status(200).json(recommendedNumbers);
+    res.status(200).json({
+      ...recommendedNumbers,
+      nextDrawNo
+    });
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: 'Server error' });

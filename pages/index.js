@@ -170,21 +170,77 @@ export default function Home() {
 
   // 로또 번호 생성 수
   const generateLottoNumbers = useCallback(async () => {
-    const excluded = excludeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
-    const included = includeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
+    console.log('=== generateLottoNumbers 함수 시작 ===');
     
-    let numbers = [...included];
-    while (numbers.length < 6) {
-      const num = Math.floor(Math.random() * 45) + 1;
-      if (!numbers.includes(num) && !excluded.includes(num)) {
-        numbers.push(num);
+    try {
+      // /api/recommend-lotto API 호출하여 추천 번호 가져오기
+      const response = await fetch('/api/recommend-lotto');
+      const data = await response.json();
+      
+      console.log('추천 번호 데이터:', data);
+      const { recommendedPair, excludedNumbers, nextDrawNo } = data;
+      
+      // 사용자가 입력한 제외/포함 번호 처리
+      const userExcluded = excludeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
+      const userIncluded = includeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
+      
+      // 모든 제외 번호 합치기 (API 제공 + 사용자 입력)
+      const allExcluded = [...excludedNumbers, ...userExcluded];
+      
+      // 최종 번호 생성
+      let numbers = [...userIncluded];
+      
+      // 포함 번호가 적으면 추천 번호 쌍 추가
+      if (numbers.length < 2) {
+        for (const num of recommendedPair) {
+          if (!numbers.includes(num) && !allExcluded.includes(num) && numbers.length < 2) {
+            numbers.push(num);
+          }
+        }
       }
+      
+      // 나머지 번호 랜덤 생성
+      while (numbers.length < 6) {
+        const num = Math.floor(Math.random() * 45) + 1;
+        if (!numbers.includes(num) && !allExcluded.includes(num)) {
+          numbers.push(num);
+        }
+      }
+      
+      numbers.sort((a, b) => a - b);
+      console.log('생성된 번호:', numbers);
+
+      setLottoNumbers(numbers);
+      setAnimationKey(prev => prev + 1);
+      setLastButtonPressed('generate');
+      setShowGenerator(false);
+
+      // 생성된 번호를 DB에 저장
+      console.log('=== 번호 저장 시작 ===');
+      console.log('저장할 회차:', nextDrawNo);
+      console.log('저장할 번호:', numbers);
+
+      // API 호출하여 저장
+      const saveResponse = await fetch('/api/save-lotto-numbers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          numbers: numbers,
+          draw_round: nextDrawNo
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        console.error('번호 저장 실패:', saveResponse.status);
+      } else {
+        const result = await saveResponse.json();
+        console.log('저장 성공:', result);
+      }
+    } catch (error) {
+      console.error('번호 생성/저장 중 오류:', error);
     }
-    numbers.sort((a, b) => a - b);
-    setLottoNumbers(numbers);
-    setAnimationKey(prev => prev + 1);
-    setLastButtonPressed('generate');
-    setShowGenerator(false);
   }, [excludeNumbers, includeNumbers]);
 
   const saveLottoNumbers = async () => {
@@ -193,55 +249,11 @@ export default function Home() {
     console.log('저장할 번호:', numbersToSave);
     
     if (savedNumbers.length < 5 && numbersToSave.length > 0) {
-      // 현재 회차 정보 가져오기
-      let drawRound = currentDrawNo;
-      console.log('현재 회차:', drawRound);
-      
-      if (!drawRound) {
-        try {
-          const response = await fetch('/api/lotto');
-          const data = await response.json();
-          drawRound = data.drwNo;
-          console.log('API에서 가져온 회차:', drawRound);
-        } catch (error) {
-          console.error('현재 회차 정보 가져오기 실패:', error);
-          return;
-        }
-      }
-
-      // lotto_numbers 테이블에 저장
-      try {
-        console.log('API 호출 시도:', {
-          numbers: numbersToSave,
-          draw_round: drawRound + 1
-        });
-        
-        const response = await fetch('/api/save-lotto-numbers', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            numbers: numbersToSave,
-            draw_round: drawRound + 1  // 다음 회차로 저장
-          }),
-        });
-
-        console.log('API 응답:', response.status);
-
-        if (!response.ok) {
-          console.error('번호 저장 실패');
-          return;
-        }
-
-        setSavedNumbers(prev => {
-          const newSavedNumbers = [...prev, numbersToSave];
-          console.log('새로 저장된 번호:', newSavedNumbers);
-          return newSavedNumbers;
-        });
-      } catch (error) {
-        console.error('번호 저장 중 오류:', error);
-      }
+      setSavedNumbers(prev => {
+        const newSavedNumbers = [...prev, numbersToSave];
+        console.log('새로 저장된 번호:', newSavedNumbers);
+        return newSavedNumbers;
+      });
     } else {
       alert('최대 5개까지 저장할 수 있습니다.');
     }
@@ -253,41 +265,62 @@ export default function Home() {
     setLottoNumbers([]); // 기존 생성된 번호 삭제
 
     try {
-      // 현재 회차 정보 가져오기
-      let drawRound = currentDrawNo;
-      if (!drawRound) {
-        const drawResponse = await fetch('/api/lotto');
-        const drawData = await drawResponse.json();
-        drawRound = drawData.drwNo;
-      }
-
+      console.log('=== AI 추천 번호 생성 시작 ===');
       const response = await fetch('/api/recommend-lotto');
       const data = await response.json();
       console.log("추천 번호 데이터:", data);
-      setFinalNumbers(data.finalNumbers); // 추천 번호를 배열로 설정
-      setRecommendedPair(data.recommendedPair); // 추천수 저장
-      setExcludedNumbers(data.excludedNumbers); // 제외수 저장
+      
+      // API 응답에서 나온 추천 번호 데이터 추출
+      const { recommendedPair, excludedNumbers, nextDrawNo } = data;
+      
+      // API로부터 받은 추천 번호 쌍과 제외 번호를 화면에 표시
+      setRecommendedPair(recommendedPair);
+      setExcludedNumbers(excludedNumbers);
+      
+      // /api/lotto 호출하여 최신 회차 정보 확인
+      const lottoResponse = await fetch('/api/lotto');
+      const lottoData = await lottoResponse.json();
+      console.log("최신 로또 데이터:", lottoData);
+      
+      // 최신 번호 기반으로 추천 번호 생성
+      // 추천 번호 쌍은 포함하고, 제외 번호는 제외
+      const finalNumbers = [...recommendedPair];
+      while (finalNumbers.length < 6) {
+        const num = Math.floor(Math.random() * 45) + 1;
+        if (!finalNumbers.includes(num) && !excludedNumbers.includes(num)) {
+          finalNumbers.push(num);
+        }
+      }
+      finalNumbers.sort((a, b) => a - b);
+      
+      console.log("저장할 회차:", nextDrawNo);
+      console.log("저장할 번호:", finalNumbers);
+      
+      setFinalNumbers(finalNumbers);
 
-      // lotto_numbers 테이블에 저장 (다음 회차로 저장)
+      // lotto_numbers 테이블에 저장
       const saveResponse = await fetch('/api/save-lotto-numbers', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          numbers: data.finalNumbers,
-          draw_round: drawRound + 1  // 다음 회차로 저장
+          numbers: finalNumbers,
+          draw_round: nextDrawNo
         }),
       });
 
       if (!saveResponse.ok) {
-        console.error('추천 번호 저장 실패');
+        console.error('추천 번호 저장 실패:', await saveResponse.text());
+      } else {
+        const result = await saveResponse.json();
+        console.log('저장 결과:', result);
       }
     } catch (error) {
       console.error('추천 번호 가져오기 실패:', error);
     }
-    setLastButtonPressed('recommend'); // AI 추천 버튼 눌림
-    setShowGenerator(false); // 생성기 숨기기
+    setLastButtonPressed('recommend');
+    setShowGenerator(false);
   };
 
   const deleteSavedNumbers = (index) => {
@@ -484,6 +517,51 @@ export default function Home() {
     }
   };
 
+  // renderGeneratedHistory 함수 추가
+  const renderGeneratedHistory = () => {
+    if (!showGeneratedHistory) return null;
+
+    return (
+      <div className="generated-history">
+        <h3>생성된 번호 히스토리</h3>
+        {loadingGeneratedHistory ? (
+          <p>로딩 중...</p>
+        ) : generatedHistory.length > 0 ? (
+          <div className="history-list">
+            {generatedHistory.map((item, index) => (
+              <div key={index} className="history-item">
+                <div className="history-header">
+                  <span>회차: {item.draw_round}</span>
+                  <span>생성일: {new Date(item.created_at).toLocaleDateString()}</span>
+                </div>
+                <div className="numbers">
+                  {item.numbers.split(',').map((number, idx) => (
+                    <span
+                      key={idx}
+                      className="number"
+                      style={{ backgroundColor: getBackgroundColor(number) }}
+                    >
+                      {number}
+                    </span>
+                  ))}
+                </div>
+                {item.is_winner !== null && (
+                  <div className="winning-info">
+                    <span className={item.is_winner ? "winner" : "non-winner"}>
+                      {item.is_winner ? '당첨!' : '미당첨'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p>저장된 번호가 없습니다.</p>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className={`container ${isDarkMode ? 'dark-mode' : ''}`}> {/* 다크 모드 클래스 추가 */}
       <Head>
@@ -500,25 +578,6 @@ export default function Home() {
           </button>
         </div>
         
-        {/* 테스트용 기록하기 버튼을 상단으로 이동 */}
-        <button 
-          onClick={testSaveNumbers}
-          style={{
-            margin: '20px 0',
-            padding: '15px 30px',
-            backgroundColor: '#ff4444',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '1.2rem',
-            fontWeight: 'bold',
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-          }}
-        >
-          🔴 테스트용 기록하기
-        </button>
-
         {/* 번호 생성기 숨기기 버튼 */}
         <button onClick={() => setShowGenerator(!showGenerator)} className="action-button">
           {showGenerator ? '번호 생성기 숨기기' : '번호 생성기 보기'}
@@ -850,15 +909,15 @@ export default function Home() {
         </div>
 
         {/* 새로운 기능 UI 추가 */}
-        <div className="flex justify-between items-center mt-4 space-x-4">
+        <div className="history-controls">
           <button
             onClick={saveGeneratedNumbers}
-            className={`px-4 py-2 rounded-lg ${
+            className={`save-button ${
               (lottoNumbers.length > 0 || finalNumbers.length > 0)
-                ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                : 'bg-gray-300 cursor-not-allowed'
+                ? 'active'
+                : 'disabled'
             }`}
-            disabled={(lottoNumbers.length === 0 && finalNumbers.length === 0)}
+            disabled={lottoNumbers.length === 0 && finalNumbers.length === 0}
           >
             번호 저장하기
           </button>
@@ -869,7 +928,7 @@ export default function Home() {
                 fetchGeneratedHistory();
               }
             }}
-            className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg"
+            className="history-toggle-button"
           >
             {showGeneratedHistory ? '히스토리 숨기기' : '히스토리 보기'}
           </button>
@@ -1426,6 +1485,118 @@ export default function Home() {
 
         .dark-mode .subtle-history-button:hover {
           background-color: rgba(111, 207, 117, 1);
+        }
+
+        /* 히스토리 관련 새로운 스타일 */
+        .history-controls {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 1rem;
+          margin: 1rem 0;
+          width: 100%;
+          max-width: 600px;
+        }
+
+        .save-button, .history-toggle-button {
+          padding: 0.5rem 1rem;
+          border-radius: 8px;
+          font-size: 1rem;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .save-button {
+          background-color: #4CAF50;
+          color: white;
+          border: none;
+        }
+
+        .save-button.active:hover {
+          background-color: #45a049;
+        }
+
+        .save-button.disabled {
+          background-color: #cccccc;
+          cursor: not-allowed;
+        }
+
+        .history-toggle-button {
+          background-color: #2196F3;
+          color: white;
+          border: none;
+        }
+
+        .history-toggle-button:hover {
+          background-color: #1976D2;
+        }
+
+        .generated-history {
+          width: 100%;
+          max-width: 600px;
+          margin: 1rem 0;
+          padding: 1rem;
+          background-color: rgba(255, 255, 255, 0.9);
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .history-item {
+          padding: 1rem;
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          background-color: rgba(255, 255, 255, 0.7);
+        }
+
+        .history-header {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 0.5rem;
+          font-size: 0.9rem;
+          color: #666;
+        }
+
+        .winning-info {
+          margin-top: 0.5rem;
+          text-align: right;
+        }
+
+        .winner {
+          color: #4CAF50;
+          font-weight: bold;
+        }
+
+        .non-winner {
+          color: #f44336;
+        }
+
+        /* 다크 모드 스타일 */
+        .dark-mode .generated-history {
+          background-color: #000000;
+          border: 1px solid #333333;
+        }
+
+        .dark-mode .history-item {
+          background-color: #1a1a1a;
+          border-color: #333333;
+        }
+
+        .dark-mode .history-header {
+          color: #999;
+        }
+
+        .dark-mode .winner {
+          color: #81c784;
+        }
+
+        .dark-mode .non-winner {
+          color: #e57373;
         }
       `}</style>
     </div>
