@@ -447,10 +447,48 @@ export default function Home() {
     }
   };
 
+  const testSaveNumbers = async () => {
+    console.log('테스트 저장 함수 호출됨');
+    const testNumbers = [1, 2, 3, 4, 5, 6];  // 테스트용 번호
+    
+    try {
+      console.log('API 호출 시도:', {
+        numbers: testNumbers,
+        draw_round: 1
+      });
+      
+      const response = await fetch('/api/save-lotto-numbers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          numbers: testNumbers,
+          draw_round: 1
+        }),
+      });
+
+      console.log('API 응답:', response.status);
+      const data = await response.json();
+      console.log('API 응답 데이터:', data);
+
+      if (!response.ok) {
+        console.error('번호 저장 실패');
+        return;
+      }
+
+      alert('테스트 번호가 저장되었습니다!');
+    } catch (error) {
+      console.error('번호 저장 중 오류:', error);
+      alert('저장 중 오류가 발생했습니다.');
+    }
+  };
+
   return (
     <div className={`container ${isDarkMode ? 'dark-mode' : ''}`}> {/* 다크 모드 클래스 추가 */}
       <Head>
         <title>로또 번호 생성기</title>
+        <meta name="description" content="AI 기반 로또 번호 생성기" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
@@ -819,6 +857,22 @@ export default function Home() {
         </div>
         
         {renderGeneratedHistory()}
+
+        {/* 테스트용 기록하기 버튼 추가 */}
+        <button 
+          onClick={testSaveNumbers}
+          style={{
+            marginTop: '20px',
+            padding: '10px 20px',
+            backgroundColor: '#ff4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer'
+          }}
+        >
+          테스트용 기록하기
+        </button>
       </main>
 
       <style jsx>{`
