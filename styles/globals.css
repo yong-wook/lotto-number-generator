@@ -18,10 +18,169 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+.container {
+  min-height: 100vh;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.main {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.title {
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  color: #333;
+}
+
+.number-generator {
+  margin-bottom: 2rem;
+}
+
+.number-generator button {
+  padding: 1rem 2rem;
+  font-size: 1.2rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.number-generator button:hover {
+  background-color: #45a049;
+}
+
+.number-generator button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.generated-numbers {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.number {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: bold;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.save-button {
+  margin-left: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.save-button:hover {
+  background-color: #1976D2;
+}
+
+.history-toggle {
+  margin-bottom: 2rem;
+}
+
+.history-toggle button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  background-color: #9C27B0;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.history-toggle button:hover {
+  background-color: #7B1FA2;
+}
+
+.generated-history {
+  text-align: left;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.history-item {
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  color: #666;
+}
+
+.winning-info {
+  margin-top: 0.5rem;
+}
+
+.winner {
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+.non-winner {
+  color: #f44336;
+}
+
+.pending {
+  color: #FFA000;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .number {
+    width: 35px;
+    height: 35px;
+    font-size: 1rem;
   }
 }
