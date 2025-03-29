@@ -617,9 +617,11 @@ export default function Home() {
         {/* 고정 추천수와 고정 제외수 정보 섹션 */}
         {recommendedPair.length > 0 && excludedNumbers.length > 0 && (
           <div className="recommendation-info">
-            <h3>{currentWeekInfo} 로또 추천 정보</h3>
-            <div className="info-container">
-              <div className="info-section">
+            <div className="recommendation-title">
+              <h3>{currentWeekInfo} 로또 추천 정보</h3>
+            </div>
+            <div className="recommendation-numbers">
+              <div className="recommendation-section">
                 <h4>추천 고정수</h4>
                 <div className="info-numbers">
                   {recommendedPair.map((number, index) => (
@@ -633,7 +635,7 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-              <div className="info-section">
+              <div className="recommendation-section">
                 <h4>추천 제외수</h4>
                 <div className="info-numbers">
                   {excludedNumbers.map((number, index) => (
@@ -940,11 +942,113 @@ export default function Home() {
       <style jsx>{`
         .container {
           min-height: 100vh;
-          padding: 0 1rem;
+          padding: 2rem;
           display: flex;
           flex-direction: column;
-          justify-content: flex-start;
           align-items: center;
+          max-width: 1200px;
+          margin: 0 auto;
+          width: 100%;
+        }
+
+        main {
+          width: 100%;
+          max-width: 800px;
+          margin: 0 auto;
+        }
+
+        .title-container {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 1rem;
+          margin-bottom: 2rem;
+          width: 100%;
+        }
+
+        .recommendation-info {
+          width: 100%;
+          margin: 1rem 0;
+          padding: 1rem;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          display: flex;
+          gap: 2rem;
+        }
+
+        .recommendation-section {
+          flex: 1;
+        }
+
+        .info-container {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .info-numbers {
+          display: flex;
+          flex-direction: row;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+
+        .numbers {
+          display: flex;
+          flex-direction: row;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+          margin: 0.5rem 0;
+          width: 100%;
+        }
+
+        .number {
+          width: 40px;
+          height: 40px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          border-radius: 50%;
+          font-weight: bold;
+          color: white;
+          flex-shrink: 0;
+        }
+
+        .generator {
+          width: 100%;
+          margin-bottom: 2rem;
+          padding: 1rem;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .result {
+          width: 100%;
+          margin: 1rem 0;
+          padding: 1rem;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .saved-numbers {
+          width: 100%;
+          margin: 1rem 0;
+          padding: 1rem;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .number-row {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          margin: 0.5rem 0;
+        }
+
+        .number-container {
+          display: flex;
+          gap: 0.5rem;
+          flex-wrap: wrap;
         }
 
         .dark-mode {
@@ -991,10 +1095,13 @@ export default function Home() {
         }
 
         .numbers {
-          display: flex;
+          display: flex !important;
+          flex-direction: row !important;
           gap: 0.5rem;
-          flex-wrap: wrap;
-          justify-content: center; /* 중앙 정렬 */
+          justify-content: flex-start !important;
+          flex-wrap: nowrap !important;
+          margin: 0.5rem 0;
+          width: 100%;
         }
 
         .number {
@@ -1006,6 +1113,7 @@ export default function Home() {
           border-radius: 50%;
           font-weight: bold;
           color: white;
+          flex-shrink: 0;
         }
 
         .action-buttons {
@@ -1071,7 +1179,7 @@ export default function Home() {
         }
 
         .loading-message {
-          animation: fadeIn 1s infinite; // 애니메이션 가
+          animation: fadeIn 1s infinite;
         }
 
         @keyframes fadeIn {
@@ -1108,466 +1216,10 @@ export default function Home() {
         }
 
         .generator {
-          margin-bottom: 2rem; /* 아래쪽 여백 추가 */
-          padding: 1rem;
-          background-color: rgba(255, 255, 255, 0.9);
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .action-buttons {
-          display: flex;
-          justify-content: center; /* 중앙 정렬 */
-          gap: 1rem; /* 버튼 간격 조정 */
-          margin-top: 1rem; /* 위쪽 여백 추가 */
-        }
-
-        .generate-button {
-          padding: 0.5rem 1rem;
-          font-size: 1rem;
-          background-color: #4CAF50;
-          color: white;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-          transition: background-color 0.3s;
-        }
-
-        .generate-button:hover {
-          background-color: #45a049;
-        }
-
-        .input-field {
-          width: 100%; /* 너비를 100%로 설정 */
-          padding: 0.5rem; /* 패딩 추가 */
-          margin: 0.5rem 0; /* 위쪽 여백 추가 */
-          border: 2px solid #4CAF50; /* 테두리 색상 설정 */
-          border-radius: 5px; /* 모서리 둥글게 */
-          font-size: 1rem; /* 글자 크기 설정 */
-          transition: border-color 0.3s; /* 테두리 색상 변화 애니메이션 */
-        }
-
-        .input-field:focus {
-          border-color: #45a049; /* 포커스 시 테두리 색상 변경 */
-          outline: none; /* 기본 아웃라인 제거 */
-        }
-
-        .dark-mode .input-field {
-          background-color: black; /* 다크 모드에서 배경색을 블랙으로 설정 */
-          color: white; /* 글자색을 흰색으로 설정 */
-        }
-
-        .dark-mode h3 {
-          color: #ffffff; /* 다크 모드에서 제목 색상을 더 밝게 */
-          text-shadow: 0 0 2px rgba(255, 255, 255, 0.2); /* 텍스트에 약간의 그림자 추가 */
-        }
-
-        .dark-mode .result h3, .dark-mode .saved-numbers h3 {
-          color: #6FCF75; /* 다크 모드에서 결과 및 저장된 번호 제목 색상 */
-          font-weight: bold;
-        }
-
-        .dark-mode .set-title {
-          color: #6FCF75; /* 다크 모드에서 세트 제목 색상 */
-        }
-
-        .dark-mode .recommendation-info {
-          background-color: #000000;
-          border: 1px solid #333333;
-        }
-        
-        .dark-mode .recommendation-info h3 {
-          color: #6FCF75;
-          text-shadow: 0 0 2px rgba(255, 255, 255, 0.2);
-        }
-
-        .dark-mode .info-section h4 {
-          color: #6FCF75;
-          font-weight: bold;
-          text-shadow: 0 0 2px rgba(255, 255, 255, 0.2);
-        }
-
-        .dark-mode .saved-numbers h3 {
-          color: #6FCF75;
-          font-weight: bold;
-          text-shadow: 0 0 2px rgba(255, 255, 255, 0.2);
-        }
-
-        .dark-mode .saved-numbers {
-          background-color: #000000;
-          border: 1px solid #333333;
-          padding: 15px;
-          border-radius: 10px;
-        }
-
-        .dark-mode .result {
-          background-color: #000000;
-          border: 1px solid #333333;
-          padding: 15px;
-          border-radius: 10px;
-        }
-
-        .dark-mode .result h3 {
-          color: #6FCF75;
-          font-weight: bold;
-          text-shadow: 0 0 2px rgba(255, 255, 255, 0.2);
-        }
-
-        .dark-mode .generator {
-          background-color: #000000;
-          border: 1px solid #333333;
-        }
-
-        .set-title {
-          font-size: 0.8rem;
-          font-weight: bold;
-          margin-bottom: 0.2rem;
-        }
-
-        .info-container {
-          display: flex;
-          flex-direction: row; /* 가로 정렬로 변경 */
-          gap: 1.5rem;
-          justify-content: center; /* 중앙 정렬 */
-        }
-        
-        .info-section {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          min-width: 150px; /* 최소 너비 설정 */
-        }
-        
-        .info-numbers {
-          display: flex;
-          flex-direction: row; /* 가로 정렬 */
-          flex-wrap: wrap; /* 필요시 줄바꿈 */
-          gap: 0.5rem; /* 숫자 간격 */
-          justify-content: center; /* 중앙 정렬 */
-        }
-        
-        @media (max-width: 480px) {
-          .info-container {
-            flex-direction: column; /* 모바일에서는 세로 정렬 */
-          }
-        }
-
-        .title-container {
-          display: flex;
-          flex-direction: row;
-          align-items: center;
-          justify-content: center;
-          gap: 1rem;
-          margin-bottom: 1rem;
-          width: 100%;
-        }
-
-        .title {
-          margin: 0;
-          line-height: 1.15;
-          font-size: 2.5rem;
-          text-align: center;
-        }
-
-        .dark-mode-button {
-          font-size: 1.5rem;
-          background-color: transparent;
-          border: none;
-          cursor: pointer;
-          padding: 0.5rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        /* 히스토리 섹션 스타일 */
-        .history-section {
-          width: 100%;
-          margin: 1rem 0;
-          background-color: rgba(255, 255, 255, 0.9);
+          margin-bottom: 2rem;
           padding: 1rem;
           border-radius: 8px;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .history-button {
-          margin-bottom: 1rem;
-        }
-
-        .history-container {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-
-        .history-item {
-          padding: 1rem;
-          border: 1px solid #e0e0e0;
-          border-radius: 8px;
-          background-color: rgba(255, 255, 255, 0.7);
-        }
-
-        .history-header {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 0.5rem;
-          font-size: 0.9rem;
-          color: #666;
-        }
-
-        .numbers {
-          display: flex;
-          flex-direction: row;
-          gap: 0.5rem;
-          justify-content: flex-start;
-          flex-wrap: nowrap;
-          margin: 0.5rem 0;
-          width: 100%;
-        }
-
-        .number {
-          width: 40px;
-          height: 40px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          border-radius: 50%;
-          font-weight: bold;
-          color: white;
-          flex-shrink: 0;
-        }
-
-        .winning-info {
-          margin-top: 0.5rem;
-          text-align: right;
-        }
-
-        .winner {
-          color: #4CAF50;
-          font-weight: bold;
-        }
-
-        .non-winner {
-          color: #f44336;
-        }
-
-        /* 다크 모드에서 히스토리 섹션 스타일 */
-        .dark-mode .history-section {
-          background-color: #000000;
-          border: 1px solid #333333;
-        }
-
-        .dark-mode .history-section h3 {
-          color: #6FCF75;
-          font-weight: bold;
-          text-shadow: 0 0 2px rgba(255, 255, 255, 0.2);
-        }
-
-        .dark-mode .history-item {
-          background-color: #1a1a1a;
-          border-color: #333333;
-        }
-
-        .dark-mode .history-header {
-          color: #999;
-        }
-
-        .dark-mode .winner {
-          color: #81c784;
-        }
-
-        .dark-mode .non-winner {
-          color: #e57373;
-        }
-
-        /* 암호 입력 관련 스타일 추가 */
-        .password-container {
-          margin: 1rem 0;
-          display: flex;
-          gap: 0.5rem;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .password-input {
-          padding: 0.5rem;
-          border-radius: 4px;
-          border: 2px solid #4CAF50;
-          font-size: 1rem;
-        }
-
-        .dark-mode .password-input {
-          background-color: #333;
-          color: white;
-          border-color: #6FCF75;
-        }
-
-        .password-button {
-          padding: 0.5rem 1rem;
-          background-color: #4CAF50;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 1rem;
-        }
-
-        .password-button:hover {
-          background-color: #45a049;
-        }
-
-        /* 은밀한 히스토리 버튼 스타일 */
-        .subtle-history-button {
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          background-color: rgba(76, 175, 80, 0.8);
-          color: white;
-          border: none;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-          z-index: 100;
-          opacity: 0.7;
-        }
-
-        .subtle-history-button:hover {
-          transform: rotate(180deg);
-          background-color: rgba(76, 175, 80, 1);
-          opacity: 1;
-          box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
-        }
-        
-        .history-icon {
-          font-size: 20px;
-          font-weight: bold;
-        }
-        
-        .dark-mode .subtle-history-button {
-          background-color: rgba(111, 207, 117, 0.8);
-          color: black;
-        }
-
-        .dark-mode .subtle-history-button:hover {
-          background-color: rgba(111, 207, 117, 1);
-        }
-
-        /* 히스토리 관련 새로운 스타일 */
-        .history-controls {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 1rem;
-          margin: 1rem 0;
-          width: 100%;
-          max-width: 600px;
-        }
-
-        .save-button, .history-toggle-button {
-          padding: 0.5rem 1rem;
-          border-radius: 8px;
-          font-size: 1rem;
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-
-        .save-button {
-          background-color: #4CAF50;
-          color: white;
-          border: none;
-        }
-
-        .save-button.active:hover {
-          background-color: #45a049;
-        }
-
-        .save-button.disabled {
-          background-color: #cccccc;
-          cursor: not-allowed;
-        }
-
-        .history-toggle-button {
-          background-color: #2196F3;
-          color: white;
-          border: none;
-        }
-
-        .history-toggle-button:hover {
-          background-color: #1976D2;
-        }
-
-        .generated-history {
-          width: 100%;
-          max-width: 600px;
-          margin: 1rem 0;
-          padding: 1rem;
-          background-color: rgba(255, 255, 255, 0.9);
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .history-list {
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-
-        .history-item {
-          padding: 1rem;
-          border: 1px solid #e0e0e0;
-          border-radius: 8px;
-          background-color: rgba(255, 255, 255, 0.7);
-        }
-
-        .history-header {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 0.5rem;
-          font-size: 0.9rem;
-          color: #666;
-        }
-
-        .winning-info {
-          margin-top: 0.5rem;
-          text-align: right;
-        }
-
-        .winner {
-          color: #4CAF50;
-          font-weight: bold;
-        }
-
-        .non-winner {
-          color: #f44336;
-        }
-
-        /* 다크 모드 스타일 */
-        .dark-mode .generated-history {
-          background-color: #000000;
-          border: 1px solid #333333;
-        }
-
-        .dark-mode .history-item {
-          background-color: #1a1a1a;
-          border-color: #333333;
-        }
-
-        .dark-mode .history-header {
-          color: #999;
-        }
-
-        .dark-mode .winner {
-          color: #81c784;
-        }
-
-        .dark-mode .non-winner {
-          color: #e57373;
         }
       `}</style>
     </div>
