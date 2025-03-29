@@ -535,7 +535,7 @@ export default function Home() {
                   <span>생성일: {new Date(item.created_at).toLocaleDateString()}</span>
                 </div>
                 <div className="numbers">
-                  {item.numbers.split(',').map((number, idx) => (
+                  {(Array.isArray(item.numbers) ? item.numbers : item.numbers.split(',')).map((number, idx) => (
                     <span
                       key={idx}
                       className="number"
