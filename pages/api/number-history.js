@@ -7,10 +7,12 @@ export default async function handler(req, res) {
       const { numbers, drawRound } = req.body;
       
       const { data, error } = await supabaseAdmin
-        .from('generated_numbers')
+        .from('lotto_numbers')
         .insert({
           numbers: numbers,
           draw_round: drawRound,
+          is_winner: null,  // 추첨 전이므로 null로 설정
+          matching_count: null  // 추첨 전이므로 null로 설정
         })
         .select()
         .single();
@@ -26,7 +28,7 @@ export default async function handler(req, res) {
     // 저장된 번호 조회
     try {
       const { data, error } = await supabaseAdmin
-        .from('generated_numbers')
+        .from('lotto_numbers')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50);  // 최근 50개만 조회
@@ -41,4 +43,4 @@ export default async function handler(req, res) {
   } else {
     res.status(405).json({ error: 'Method not allowed' });
   }
-} 
+}
