@@ -1310,68 +1310,45 @@ export default function Home() {
         .history-header {
           display: flex;
           justify-content: space-between;
-          align-items: center;
           margin-bottom: 0.5rem;
-          flex-wrap: wrap;
-        }
-
-        .history-header h4 {
-          margin: 0;
-          font-size: 1.1rem;
-        }
-
-        .history-stats {
-          display: flex;
-          gap: 1rem;
-        }
-
-        .stat-item {
-          padding: 0.3rem 0.6rem;
-          border-radius: 4px;
           font-size: 0.9rem;
+          color: #666;
+        }
+
+        .numbers {
+          display: flex;
+          flex-direction: row;
+          gap: 0.5rem;
+          justify-content: flex-start;
+          flex-wrap: nowrap;
+          margin: 0.5rem 0;
+          width: 100%;
+        }
+
+        .number {
+          width: 40px;
+          height: 40px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          border-radius: 50%;
+          font-weight: bold;
+          color: white;
+          flex-shrink: 0;
+        }
+
+        .winning-info {
+          margin-top: 0.5rem;
+          text-align: right;
+        }
+
+        .winner {
+          color: #4CAF50;
           font-weight: bold;
         }
 
-        .success {
-          background-color: rgba(76, 175, 80, 0.2);
-          color: #2e7d32;
-        }
-
-        .failure {
-          background-color: rgba(244, 67, 54, 0.2);
-          color: #c62828;
-        }
-
-        .history-numbers-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 1rem;
-        }
-
-        .history-numbers-section {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .history-numbers-section h5 {
-          margin: 0.5rem 0;
-          font-size: 0.9rem;
-        }
-
-        .history-numbers {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.5rem;
-        }
-
-        .number.hit {
-          border: 3px solid gold;
-          box-shadow: 0 0 5px gold;
-        }
-
-        .number.missed {
-          border: 3px solid #f44336;
-          box-shadow: 0 0 5px #f44336;
+        .non-winner {
+          color: #f44336;
         }
 
         /* 다크 모드에서 히스토리 섹션 스타일 */
@@ -1391,21 +1368,15 @@ export default function Home() {
           border-color: #333333;
         }
 
-        .dark-mode .history-header h4 {
-          color: #ffffff;
+        .dark-mode .history-header {
+          color: #999;
         }
 
-        .dark-mode .history-numbers-section h5 {
-          color: #cccccc;
-        }
-
-        .dark-mode .success {
-          background-color: rgba(76, 175, 80, 0.1);
+        .dark-mode .winner {
           color: #81c784;
         }
 
-        .dark-mode .failure {
-          background-color: rgba(244, 67, 54, 0.1);
+        .dark-mode .non-winner {
           color: #e57373;
         }
 
