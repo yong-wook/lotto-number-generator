@@ -470,21 +470,14 @@ export default function Home() {
 
   // 3개 이상 일치하는 번호만 필터링하는 로직 (useMemo 사용)
   const filteredGeneratedHistory = useMemo(() => {
-    if (!generatedHistory || generatedHistory.length === 0 || Object.keys(winningNumbersMap).length === 0) {
+    if (!generatedHistory || generatedHistory.length === 0) {
       return []; // 데이터가 없으면 빈 배열 반환
     }
 
-    return generatedHistory.filter(item => {
-      const winningNumbers = winningNumbersMap[item.draw_round];
-      if (!winningNumbers || winningNumbers.length === 0) {
-        return false; // 해당 회차 당첨 번호 없으면 제외
-      }
+    // item.matched_count 값을 직접 사용하여 필터링
+    return generatedHistory.filter(item => item.matched_count >= 3);
 
-      const userNumbers = item.numbers || [];
-      const matchCount = userNumbers.filter(num => winningNumbers.includes(Number(num))).length;
-      return matchCount >= 3; // 3개 이상 일치하는 경우만 포함
-    });
-  }, [generatedHistory, winningNumbersMap]);
+  }, [generatedHistory]); // 의존성 배열에서 winningNumbersMap 제거
 
   // 당첨 확인
   const checkWinningNumbers = async (drawRound) => {

@@ -141,6 +141,54 @@ export default async function handler(req, res) {
           console.error('Supabase 데이터 업데이트 오류:', error);
         } else {
           console.log('Supabase 데이터 업데이트 성공');
+
+          // --- 시작: matched_count 업데이트 로직 ---
+          try {
+            const currentDrawNo = parseInt(result.drwNo);
+            const winningNumbers = [
+              result.drwtNo1, result.drwtNo2, result.drwtNo3,
+              result.drwtNo4, result.drwtNo5, result.drwtNo6
+            ].map(Number);
+
+            console.log(`Updating matched_count for draw ${currentDrawNo}...`);
+
+            // 해당 회차의 사용자 번호 조회
+            const { data: userNumbersData, error: fetchUserNumbersError } = await supabaseAdmin
+              .from('lotto_numbers')
+              .select('id, numbers')
+              .eq('draw_round', currentDrawNo);
+
+            if (fetchUserNumbersError) {
+              console.error('Error fetching user numbers for count update:', fetchUserNumbersError);
+            } else if (userNumbersData && userNumbersData.length > 0) {
+              // 각 번호 세트의 matched_count 계산 및 업데이트
+              const updates = userNumbersData.map(userNumberEntry => {
+                const userNums = userNumberEntry.numbers || [];
+                const count = userNums.filter(num => winningNumbers.includes(Number(num))).length;
+                return { id: userNumberEntry.id, matched_count: count };
+              });
+
+              // Supabase에 업데이트 실행
+              for (const update of updates) {
+                const { error: updateError } = await supabaseAdmin
+                  .from('lotto_numbers')
+                  .update({ matched_count: update.matched_count })
+                  .eq('id', update.id);
+
+                if (updateError) {
+                  console.error(`Error updating matched_count for id ${update.id}:`, updateError);
+                  // 개별 업데이트 오류는 로깅만 하고 계속 진행
+                }
+              }
+              console.log(`Successfully updated matched_count for ${updates.length} entries for draw ${currentDrawNo}.`);
+            } else {
+              console.log(`No user numbers found for draw ${currentDrawNo} to update matched_count.`);
+            }
+          } catch (updateCountError) {
+            console.error('Error during matched_count update process:', updateCountError);
+            // matched_count 업데이트 중 오류가 발생해도 API의 주 응답에는 영향을 주지 않음
+          }
+          // --- 종료: matched_count 업데이트 로직 ---
         }
       } catch (error) {
         console.error('Supabase 작업 중 예외 발생:', error);
