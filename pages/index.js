@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Head from 'next/head';
 
 export default function Home() {
@@ -28,6 +28,7 @@ export default function Home() {
   const [generatedHistory, setGeneratedHistory] = useState([]);
   const [showGeneratedHistory, setShowGeneratedHistory] = useState(false);
   const [loadingGeneratedHistory, setLoadingGeneratedHistory] = useState(false);
+  const [winningNumbersMap, setWinningNumbersMap] = useState({}); // 당첨 번호 맵 상태 추가
   const numbersRef = useRef(null);
   
   // 마지막으로 눌린 버튼을 추하는 상태 추가
@@ -439,22 +440,51 @@ export default function Home() {
     }
   };
 
-  // 저장된 번호 히스토리 조회
+  // 저장된 번호 히스토리 조회 함수 수정
   const fetchGeneratedHistory = async () => {
     setLoadingGeneratedHistory(true);
+    setWinningNumbersMap({}); // 당첨 번호 맵 초기화
     try {
-      const response = await fetch('/api/number-history');
-      if (!response.ok) throw new Error('조회 실패');
-      
-      const data = await response.json();
-      setGeneratedHistory(data);
+      const historyResponse = await fetch('/api/number-history');
+      if (!historyResponse.ok) throw new Error('히스토리 조회 실패');
+
+      const historyData = await historyResponse.json();
+      setGeneratedHistory(historyData);
+
+      // 히스토리가 있으면 해당 회차들의 당첨 번호 조회
+      if (historyData.length > 0) {
+        const rounds = historyData.map(item => item.draw_round).join(',');
+        const winningNumbersResponse = await fetch(`/api/winning-numbers-by-round?rounds=${rounds}`);
+        if (winningNumbersResponse.ok) {
+          const winningData = await winningNumbersResponse.json();
+          setWinningNumbersMap(winningData);
+        }
+      }
     } catch (error) {
-      console.error('히스토리 조회 실패:', error);
+      console.error('히스토리 조회 또는 당첨 번호 조회 실패:', error);
       alert('히스토리 조회에 실패했습니다.');
     } finally {
       setLoadingGeneratedHistory(false);
     }
   };
+
+  // 3개 이상 일치하는 번호만 필터링하는 로직 (useMemo 사용)
+  const filteredGeneratedHistory = useMemo(() => {
+    if (!generatedHistory || generatedHistory.length === 0 || Object.keys(winningNumbersMap).length === 0) {
+      return []; // 데이터가 없으면 빈 배열 반환
+    }
+
+    return generatedHistory.filter(item => {
+      const winningNumbers = winningNumbersMap[item.draw_round];
+      if (!winningNumbers || winningNumbers.length === 0) {
+        return false; // 해당 회차 당첨 번호 없으면 제외
+      }
+
+      const userNumbers = item.numbers || [];
+      const matchCount = userNumbers.filter(num => winningNumbers.includes(Number(num))).length;
+      return matchCount >= 3; // 3개 이상 일치하는 경우만 포함
+    });
+  }, [generatedHistory, winningNumbersMap]);
 
   // 당첨 확인
   const checkWinningNumbers = async (drawRound) => {
@@ -876,21 +906,23 @@ export default function Home() {
         </div>
         
         {showGeneratedHistory && (
-          <div className="generated-history-container"> {/* 새로운 컨테이너 추가 */}
-            <h3 className="history-title">생성된 번호 히스토리</h3>
+          <div className="generated-history-container">
+            <h3 className="history-title">생성된 번호 히스토리 (3개 이상 적중)</h3> {/* 제목 수정 */}
             {loadingGeneratedHistory ? (
               <p>로딩 중...</p>
-            ) : generatedHistory.length === 0 ? (
-              <p>저장된 번호가 없습니다.</p>
+            ) : filteredGeneratedHistory.length === 0 ? ( /* 필터링된 데이터로 조건 변경 */
+              <p>3개 이상 적중한 번호 기록이 없습니다.</p> /* 메시지 수정 */
             ) : (
-              <div className="generated-history"> {/* 히스토리 아이템들을 감싸는 컨테이너 */}
-                {generatedHistory.map((item, index) => (
+              <div className="generated-history">
+                {/* 필터링된 데이터 사용 */}
+                {filteredGeneratedHistory.map((item, index) => (
                   <div key={index} className="history-item">
                     <div className="history-item-header">
                       <h5>{`회차: ${item.draw_round}`}</h5>
                       <p>{new Date(item.created_at).toLocaleDateString()}</p>
                       {item.win_grade && <span className="win-grade">{item.win_grade}등</span>}
-                      <button onClick={() => checkWinningNumbers(item.draw_round)}>당첨 확인</button>
+                      {/* 당첨 확인 버튼은 유지 */}
+                      {/* <button onClick={() => checkWinningNumbers(item.draw_round)}>당첨 확인</button> */}
                     </div>
                     <div className="history-item-numbers">
                       {item.numbers && item.numbers.map((number, idx) => (
@@ -899,6 +931,17 @@ export default function Home() {
                         </span>
                       ))}
                     </div>
+                    {/* 당첨 번호 표시 추가 (참고용) */}
+                    {winningNumbersMap[item.draw_round] && (
+                      <div className="winning-numbers-display">
+                        <span className="winning-label">당첨:</span>
+                        {winningNumbersMap[item.draw_round].map((wn, wnIdx) => (
+                          <span key={`wn-${wnIdx}`} className="number small" style={{ backgroundColor: getBackgroundColor(wn) }}>
+                            {wn}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
