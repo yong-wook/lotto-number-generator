@@ -907,31 +907,34 @@ export default function Home() {
         
         {showGeneratedHistory && (
           <div className="generated-history-container">
-            <h3 className="history-title">생성된 번호 히스토리 (3개 이상 적중)</h3> {/* 제목 수정 */}
+            <h3 className="history-title">적중 히스토리 (3개 이상)</h3>
             {loadingGeneratedHistory ? (
               <p>로딩 중...</p>
-            ) : filteredGeneratedHistory.length === 0 ? ( /* 필터링된 데이터로 조건 변경 */
-              <p>3개 이상 적중한 번호 기록이 없습니다.</p> /* 메시지 수정 */
+            ) : filteredGeneratedHistory.length === 0 ? (
+              <p>3개 이상 적중한 번호 기록이 없습니다.</p>
             ) : (
               <div className="generated-history">
-                {/* 필터링된 데이터 사용 */}
                 {filteredGeneratedHistory.map((item, index) => (
                   <div key={index} className="history-item">
                     <div className="history-item-header">
                       <h5>{`회차: ${item.draw_round}`}</h5>
                       <p>{new Date(item.created_at).toLocaleDateString()}</p>
                       {item.win_grade && <span className="win-grade">{item.win_grade}등</span>}
-                      {/* 당첨 확인 버튼은 유지 */}
-                      {/* <button onClick={() => checkWinningNumbers(item.draw_round)}>당첨 확인</button> */}
                     </div>
                     <div className="history-item-numbers">
-                      {item.numbers && item.numbers.map((number, idx) => (
-                        <span key={idx} className="number" style={{ backgroundColor: getBackgroundColor(number) }}>
-                          {number}
-                        </span>
-                      ))}
+                      {item.numbers && item.numbers.map((number, idx) => {
+                        const isMatched = winningNumbersMap[item.draw_round]?.includes(Number(number));
+                        return (
+                          <span
+                            key={idx}
+                            className={`number ${isMatched ? 'matched-number' : ''}`}
+                            style={{ backgroundColor: getBackgroundColor(number) }}
+                          >
+                            {number}
+                          </span>
+                        );
+                      })}
                     </div>
-                    {/* 당첨 번호 표시 추가 (참고용) */}
                     {winningNumbersMap[item.draw_round] && (
                       <div className="winning-numbers-display">
                         <span className="winning-label">당첨:</span>

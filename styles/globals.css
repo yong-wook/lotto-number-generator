@@ -378,3 +378,33 @@ label {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: 1rem;
 }
+
+/* 당첨 번호 표시 스타일 (참고용) */
+.winning-numbers-display {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.2); /* 구분선 */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.winning-label {
+  font-size: 0.9rem;
+  color: #cccccc;
+}
+
+/* 작은 번호 스타일 */
+.number.small {
+  width: 1.8rem;
+  height: 1.8rem;
+  font-size: 0.8rem;
+}
+
+/* 적중 번호 스타일 */
+.matched-number {
+  border: 2px solid #ffffff; /* 흰색 테두리 추가 */
+  font-weight: 900; /* 더 굵게 */
+  transform: scale(1.1); /* 약간 크게 */
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.7); /* 약간의 그림자 효과 */
+}
