@@ -517,51 +517,6 @@ export default function Home() {
     }
   };
 
-  // renderGeneratedHistory 함수 추가
-  const renderGeneratedHistory = () => {
-    if (!showGeneratedHistory) return null;
-
-    return (
-      <div className="generated-history">
-        <h3>생성된 번호 히스토리</h3>
-        {loadingGeneratedHistory ? (
-          <p>로딩 중...</p>
-        ) : generatedHistory.length > 0 ? (
-          <div className="history-list">
-            {generatedHistory.map((item, index) => (
-              <div key={index} className="history-item">
-                <div className="history-header">
-                  <span>회차: {item.draw_round}</span>
-                  <span>생성일: {new Date(item.created_at).toLocaleDateString()}</span>
-                </div>
-                <div className="numbers">
-                  {(Array.isArray(item.numbers) ? item.numbers : item.numbers.split(',')).map((number, idx) => (
-                    <span
-                      key={idx}
-                      className="number"
-                      style={{ backgroundColor: getBackgroundColor(number) }}
-                    >
-                      {number}
-                    </span>
-                  ))}
-                </div>
-                {item.is_winner !== null && (
-                  <div className="winning-info">
-                    <span className={item.is_winner ? "winner" : "non-winner"}>
-                      {item.is_winner ? '당첨!' : '미당첨'}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p>저장된 번호가 없습니다.</p>
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className={`container ${isDarkMode ? 'dark-mode' : ''}`}> {/* 다크 모드 클래스 추가 */}
       <Head>
@@ -655,73 +610,57 @@ export default function Home() {
 
         {/* 히스토리 섹션은 암호가 맞았을 때만 표시 */}
         {showHistory && isPasswordCorrect && (
-          <div className="history-section">
-            <h3>추천/제외 번호 적중 히스토리</h3>
+          <div className="recommend-history-container">
+            <h3 className="recommend-history-title">추천/제외 번호 적중 히스토리</h3>
             {loadingHistory ? (
-              <p className="loading-message">히스토리 로딩 중...</p>
-            ) : recommendHistory.length > 0 ? (
-              <div className="history-container">
-                {recommendHistory.map((history, index) => (
-                  <div key={index} className="history-item">
-                    <div className="history-header">
-                      <h4>{history.week}회차 ({history.date})</h4>
-                      <div className="history-stats">
-                        <span className="stat-item success">추천 적중: {history.recommendHits}/2</span>
-                        <span className="stat-item failure">제외 실패: {history.excludeFailures}/6</span>
-                      </div>
-                    </div>
-
-                    <div className="history-numbers-grid">
-                      <div className="history-numbers-section">
-                        <h5>추천 번호</h5>
-                        <div className="history-numbers">
-                          {(history.recommendedPair || []).map((number, idx) => (
-                            <span
-                              key={idx}
-                              className={`number ${(history.winningNumbers || []).includes(number) ? 'hit' : ''}`}
-                              style={{ backgroundColor: getBackgroundColor(number) }}
-                            >
-                              {number}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="history-numbers-section">
-                        <h5>제외 번호</h5>
-                        <div className="history-numbers">
-                          {(history.excludedNumbers || []).map((number, idx) => (
-                            <span
-                              key={idx}
-                              className={`number ${(history.winningNumbers || []).includes(number) ? 'missed' : ''}`}
-                              style={{ backgroundColor: getBackgroundColor(number) }}
-                            >
-                              {number}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="history-numbers-section">
-                        <h5>당첨 번호</h5>
-                        <div className="history-numbers">
-                          {(history.winningNumbers || []).map((number, idx) => (
-                            <span
-                              key={idx}
-                              className="number"
-                              style={{ backgroundColor: getBackgroundColor(number) }}
-                            >
-                              {number}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <p>로딩 중...</p>
+            ) : recommendHistory.length === 0 ? (
+              <p>히스토리 정보가 없습니다.</p>
             ) : (
-              <p>히스토리 데이터가 없습니다.</p>
+              <div className="recommend-history-list">
+                {recommendHistory.map((item, index) => {
+                  return (
+                    <div key={index} className="recommend-history-item">
+                      <h4>{item.week}회차 ({new Date(item.date).toLocaleDateString()})</h4>
+                      {/* 추천/제외 통계 그룹 */}
+                      <div className="history-stats-row">
+                        <p>추천 적중: {item.recommendHits}/{item.recommendedPair?.length ?? 0}</p>
+                        <p>제외 실패: {item.excludeFailures}/{item.excludedNumbers?.length ?? 0}</p>
+                      </div>
+                      {/* 추천/제외 번호 그룹 */}
+                      <div className="history-rec-ex-row">
+                        {/* 추천 번호 섹션 */}
+                        <div className="history-number-section">
+                          <h5>추천 번호</h5>
+                          <div className="recommend-history-numbers">
+                            {(item.recommendedPair || []).map((num, i) => (
+                              <span key={`rec-${i}`} className="number" style={{ backgroundColor: getBackgroundColor(num) }}>{num}</span>
+                            ))}
+                          </div>
+                        </div>
+                        {/* 제외 번호 섹션 */}
+                        <div className="history-number-section">
+                          <h5>제외 번호</h5>
+                          <div className="recommend-history-numbers">
+                            {(item.excludedNumbers || []).map((num, i) => (
+                              <span key={`exc-${i}`} className="number" style={{ backgroundColor: getBackgroundColor(num) }}>{num}</span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      {/* 당첨 번호 섹션 (별도 유지) */}
+                      <div className="history-number-section winning-section">
+                        <h5>당첨 번호</h5>
+                        <div className="recommend-history-numbers">
+                          {(item.winningNumbers || []).map((num, i) => (
+                            <span key={`win-${i}`} className="number" style={{ backgroundColor: getBackgroundColor(num) }}>{num}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
@@ -936,7 +875,36 @@ export default function Home() {
           </button>
         </div>
         
-        {renderGeneratedHistory()}
+        {showGeneratedHistory && (
+          <div className="generated-history-container"> {/* 새로운 컨테이너 추가 */}
+            <h3 className="history-title">생성된 번호 히스토리</h3>
+            {loadingGeneratedHistory ? (
+              <p>로딩 중...</p>
+            ) : generatedHistory.length === 0 ? (
+              <p>저장된 번호가 없습니다.</p>
+            ) : (
+              <div className="generated-history"> {/* 히스토리 아이템들을 감싸는 컨테이너 */}
+                {generatedHistory.map((item, index) => (
+                  <div key={index} className="history-item">
+                    <div className="history-item-header">
+                      <h5>{`회차: ${item.draw_round}`}</h5>
+                      <p>{new Date(item.created_at).toLocaleDateString()}</p>
+                      {item.win_grade && <span className="win-grade">{item.win_grade}등</span>}
+                      <button onClick={() => checkWinningNumbers(item.draw_round)}>당첨 확인</button>
+                    </div>
+                    <div className="history-item-numbers">
+                      {item.numbers && item.numbers.map((number, idx) => (
+                        <span key={idx} className="number" style={{ backgroundColor: getBackgroundColor(number) }}>
+                          {number}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       <style jsx>{`

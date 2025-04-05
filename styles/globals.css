@@ -258,3 +258,123 @@ label {
 .dark-mode label {
   color: #ffffff !important;
 }
+
+.generated-history {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.history-title {
+  text-align: center;
+  color: #ffffff;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.history-item {
+  background-color: #1e1e1e;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.history-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.history-item-header h5 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.history-item-numbers {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.generated-history-container {
+  width: 100%;
+  margin-top: 2rem;
+}
+
+.recommend-history-container {
+  width: 100%;
+  margin-top: 2rem;
+}
+
+.recommend-history-title {
+  text-align: center;
+  color: #ffffff;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.recommend-history-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.recommend-history-item {
+  background-color: #1e1e1e;
+  padding: 1rem;
+  border-radius: 8px;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  flex: 1 1 100%;
+  box-sizing: border-box;
+}
+
+.recommend-history-item h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.recommend-history-item p {
+  margin: 0;
+}
+
+.recommend-history-numbers {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+/* 통계 행 스타일 */
+.history-stats-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+/* 추천/제외 번호 행 스타일 */
+.history-rec-ex-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  gap: 2rem;
+}
+
+/* 각 번호 섹션 (추천, 제외, 당첨) 스타일 */
+.history-number-section {
+  flex: 1;
+}
+
+/* 당첨 번호 섹션은 약간의 상단 여백 추가 */
+.winning-section {
+  margin-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1rem;
+}
