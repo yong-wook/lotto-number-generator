@@ -453,11 +453,17 @@ export default function Home() {
 
       // 히스토리가 있으면 해당 회차들의 당첨 번호 조회
       if (historyData.length > 0) {
-        const rounds = historyData.map(item => item.draw_round).join(',');
-        const winningNumbersResponse = await fetch(`/api/winning-numbers-by-round?rounds=${rounds}`);
-        if (winningNumbersResponse.ok) {
-          const winningData = await winningNumbersResponse.json();
-          setWinningNumbersMap(winningData);
+        // Set을 사용하여 중복 회차 번호 제거 후 join
+        const uniqueRounds = [...new Set(historyData.map(item => item.draw_round).filter(round => round != null))];
+        const roundsQuery = uniqueRounds.join(',');
+
+        // 중복 제거된 회차 번호로 API 호출
+        if (roundsQuery) { // 회차 정보가 있을 때만 호출
+          const winningNumbersResponse = await fetch(`/api/winning-numbers-by-round?rounds=${roundsQuery}`);
+          if (winningNumbersResponse.ok) {
+            const winningData = await winningNumbersResponse.json();
+            setWinningNumbersMap(winningData);
+          }
         }
       }
     } catch (error) {
