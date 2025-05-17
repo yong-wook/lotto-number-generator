@@ -31,6 +31,7 @@ export default function Home() {
   const [winningNumbersMap, setWinningNumbersMap] = useState({}); // 당첨 번호 맵 상태 추가
   const [selectedWeeks, setSelectedWeeks] = useState(4); // 선택된 주 상태 추가 (기본값 4주)
   const numbersRef = useRef(null);
+  const [statsRecommendedNumbers, setStatsRecommendedNumbers] = useState([]); // 통계 기반 추천 번호 상태
   
   // 마지막으로 눌린 버튼을 추하는 상태 추가
   const [lastButtonPressed, setLastButtonPressed] = useState(null);
@@ -556,6 +557,128 @@ export default function Home() {
     }
   };
 
+  // 통계 계산 로직 (useMemo 활용)
+  const individualNumberStats = useMemo(() => {
+    if (!pastWinningNumbers || pastWinningNumbers.length === 0) {
+      return [];
+    }
+    const counts = {};
+    pastWinningNumbers.forEach(draw => {
+      const drawnInThisDraw = new Set(); // 한 회차에 중복 등장시 1회로 카운트 위함 (사실상 로또번호는 중복없으나 안전장치)
+      for (let i = 1; i <= 6; i++) {
+        const num = draw[`drwtNo${i}`];
+        drawnInThisDraw.add(num);
+      }
+      drawnInThisDraw.forEach(num => {
+        counts[num] = (counts[num] || 0) + 1;
+      });
+    });
+
+    const stats = [];
+    const numberOfDraws = pastWinningNumbers.length;
+    for (let i = 1; i <= 45; i++) {
+      const count = counts[i] || 0;
+      const percentage = numberOfDraws > 0 ? (count / numberOfDraws) * 100 : 0;
+      stats.push({
+        number: i,
+        count,
+        percentage: percentage.toFixed(1) + '%',
+      });
+    }
+    return stats;
+  }, [pastWinningNumbers]);
+
+  const colorGroupStats = useMemo(() => {
+    if (!pastWinningNumbers || pastWinningNumbers.length === 0) {
+      return [];
+    }
+    const groups = [
+      { name: '1-10번대 (노랑)', color: '#fbc400', range: [1, 10], count: 0, numbers: [] },
+      { name: '11-20번대 (파랑)', color: '#69c8f2', range: [11, 20], count: 0, numbers: [] },
+      { name: '21-30번대 (빨강)', color: '#ff7272', range: [21, 30], count: 0, numbers: [] },
+      { name: '31-40번대 (회색)', color: '#aaa', range: [31, 40], count: 0, numbers: [] },
+      { name: '41-45번대 (초록)', color: '#b0d840', range: [41, 45], count: 0, numbers: [] },
+    ];
+
+    let totalNumbersDrawn = 0;
+    pastWinningNumbers.forEach(draw => {
+      for (let i = 1; i <= 6; i++) {
+        const num = draw[`drwtNo${i}`];
+        totalNumbersDrawn++;
+        for (const group of groups) {
+          if (num >= group.range[0] && num <= group.range[1]) {
+            group.count++;
+            group.numbers.push(num); // 어떤 번호가 속했는지 추적 (선택사항)
+            break;
+          }
+        }
+      }
+    });
+
+    return groups.map(group => ({
+      ...group,
+      percentage: totalNumbersDrawn > 0 ? ((group.count / totalNumbersDrawn) * 100).toFixed(1) + '%' : '0.0%',
+    }));
+  }, [pastWinningNumbers]);
+
+  // 통계 기반 번호 추천 함수
+  const generateStatsBasedRecommendation = useCallback(() => {
+    if (!individualNumberStats || individualNumberStats.length === 0 || !pastWinningNumbers || pastWinningNumbers.length === 0) {
+      alert('통계 데이터가 없습니다. 먼저 지난 회차를 조회하고 분석할 데이터가 있는지 확인해주세요.');
+      return;
+    }
+
+    const weightedLotteryPool = [];
+    individualNumberStats.forEach(stat => {
+      // 등장 횟수 + 1을 가중치로 사용하여 모든 번호에 기본 선택 확률 부여
+      const weight = stat.count + 1; 
+      for (let i = 0; i < weight; i++) {
+        weightedLotteryPool.push(stat.number);
+      }
+    });
+
+    if (weightedLotteryPool.length === 0) {
+      // 만약의 경우, 풀이 비어있다면 순수 랜덤 번호 생성 (이론상 발생하기 어려움)
+      const pureRandomNumbers = [];
+      while (pureRandomNumbers.length < 6) {
+        const num = Math.floor(Math.random() * 45) + 1;
+        if (!pureRandomNumbers.includes(num)) {
+          pureRandomNumbers.push(num);
+        }
+      }
+      setStatsRecommendedNumbers(pureRandomNumbers.sort((a, b) => a - b));
+      setAnimationKey(prev => `stats-${prev + 1}`); // 애니메이션 키 구분
+      return;
+    }
+
+    const recommendedSet = new Set();
+    let attempts = 0; // 무한 루프 방지
+    while (recommendedSet.size < 6 && attempts < 1000) {
+      const randomIndex = Math.floor(Math.random() * weightedLotteryPool.length);
+      const pickedNumber = weightedLotteryPool[randomIndex];
+      recommendedSet.add(pickedNumber);
+      attempts++;
+    }
+    
+    if (recommendedSet.size < 6) {
+        // weightedLotteryPool에 유니크한 숫자가 6개 미만일 극단적인 경우 (예: N이 매우 작고 나온숫자만 반복된경우 + 가중치로 인해)
+        // 이 경우 나머지 숫자는 순수 랜덤으로 채움
+        const existingNumbers = Array.from(recommendedSet);
+        while(recommendedSet.size < 6  && attempts < 2000) {
+            const num = Math.floor(Math.random() * 45) + 1;
+            if (!recommendedSet.has(num)) {
+                recommendedSet.add(num);
+            }
+            attempts++;
+        }
+    }
+
+    const finalRecommendedNumbers = Array.from(recommendedSet).sort((a, b) => a - b);
+    setStatsRecommendedNumbers(finalRecommendedNumbers);
+    setAnimationKey(prev => `stats-${typeof prev === 'string' ? parseInt(prev.split('-')[1] || '0') + 1 : prev + 1}`); 
+
+  }, [individualNumberStats, pastWinningNumbers]);
+
   return (
     <div className={`container ${isDarkMode ? 'dark-mode' : ''}`}> {/* 다크 모드 클래스 추가 */}
       <Head>
@@ -904,6 +1027,54 @@ export default function Home() {
               pastWinningNumbers.length === 0 ? null : (
                 null)
             )}
+
+            {/* 지난 N주간 당첨번호 통계 섹션 */}
+            {showPastNumbers && pastWinningNumbers.length > 0 && (
+              <div className="past-numbers-statistics">
+                <h3 className="statistics-title">
+                  지난 {selectedWeeks}주간 당첨번호 통계 (총 {pastWinningNumbers.length}회 분석)
+                </h3>
+
+                <div className="number-appearance-stats">
+                  <h4>번호별 등장 비율</h4>
+                  <div className="stats-grid">
+                    {individualNumberStats.map(stat => (
+                      <div key={stat.number} className="stat-item individual-stat-item">
+                        <span
+                          className="number"
+                          style={{ backgroundColor: getBackgroundColor(stat.number) }}
+                        >
+                          {stat.number}
+                        </span>
+                        <span className="percentage">{stat.percentage}</span>
+                        <span className="count">({stat.count}회)</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="color-group-stats">
+                  <h4>색상(번호대)별 등장 비율 (총 {pastWinningNumbers.length * 6}개 번호 기준)</h4>
+                  <ul>
+                    {colorGroupStats.map(stat => (
+                      <li key={stat.name} className="stat-item color-group-stat-item">
+                        <span className="color-swatch" style={{ backgroundColor: stat.color }}></span>
+                        <span className="group-name">{stat.name}:</span>
+                        <span className="percentage">{stat.percentage}</span>
+                        <span className="count">({stat.count}개)</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* 통계 기반 번호 추천 버튼 */}
+                <div className="stats-recommend-button-container">
+                  <button onClick={generateStatsBasedRecommendation} className="generate-button stats-recommend-button">
+                    통계 기반 번호 추천
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -977,6 +1148,25 @@ export default function Home() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* 통계 기반 추천 번호 표시 영역 */}
+        {statsRecommendedNumbers.length > 0 && (
+          <div className="result animated stats-recommended-numbers-result" key={animationKey}> 
+            <h3>통계 기반 추천 번호</h3>
+            <div className="numbers">
+              {statsRecommendedNumbers.map((number, index) => (
+                <span
+                  key={index}
+                  className="number"
+                  style={{ backgroundColor: getBackgroundColor(number) }}
+                >
+                  {number}
+                </span>
+              ))}
+            </div>
+            {/* 여기에 저장하기 등의 추가 버튼을 원하면 추가 가능 */}
           </div>
         )}
       </main>
@@ -1244,6 +1434,7 @@ export default function Home() {
         .weeks-input-label {
           font-size: 1rem;
           margin-left: 0.25rem; /* 입력 필드와 "주" 사이 간격 */
+          font-weight: bold; /* 글씨 볼드 처리 */
         }
 
         @media (max-width: 768px) {
@@ -1294,6 +1485,121 @@ export default function Home() {
           padding: 1rem;
           border-radius: 8px;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 통계 섹션 스타일 */
+        .past-numbers-statistics {
+          margin-top: 2rem;
+          padding: 1.5rem;
+          border-radius: 8px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+          background-color: #f9f9f9; /* 밝은 배경색 */
+        }
+        .dark-mode .past-numbers-statistics {
+          background-color: #2c2c2c; /* 다크모드 배경색 */
+          box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .statistics-title {
+          text-align: center;
+          margin-bottom: 1.5rem;
+          font-size: 1.5rem;
+        }
+        .number-appearance-stats, .color-group-stats {
+          margin-bottom: 1.5rem;
+        }
+        .number-appearance-stats h4, .color-group-stats h4 {
+          margin-bottom: 1rem;
+          font-size: 1.2rem;
+          border-bottom: 2px solid #eee;
+          padding-bottom: 0.5rem;
+        }
+        .dark-mode .number-appearance-stats h4, .dark-mode .color-group-stats h4 {
+          border-bottom-color: #444;
+        }
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+          gap: 0.8rem;
+        }
+        .stat-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 0.5rem;
+          border-radius: 6px;
+          background-color: #fff;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .dark-mode .stat-item {
+          background-color: #3a3a3a;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .individual-stat-item .number { /* 번호 공 크기 유지 */
+          width: 30px;
+          height: 30px;
+          font-size: 0.9rem;
+          margin-bottom: 0.3rem;
+        }
+        .stat-item .percentage {
+          font-weight: bold;
+          font-size: 0.95rem;
+          color: #333;
+        }
+        .dark-mode .stat-item .percentage {
+          color: #eee;
+        }
+        .stat-item .count {
+          font-size: 0.8rem;
+          color: #666;
+        }
+        .dark-mode .stat-item .count {
+          color: #bbb;
+        }
+        .color-group-stats ul {
+          list-style: none;
+          padding: 0;
+        }
+        .color-group-stat-item {
+          flex-direction: row;
+          justify-content: flex-start;
+          align-items: center;
+          padding: 0.8rem 0.5rem; /* 패딩 조정 */
+          margin-bottom: 0.5rem;
+          gap: 0.5rem; /* 요소 간 간격 */
+        }
+        .color-swatch {
+          width: 20px;
+          height: 20px;
+          border-radius: 4px;
+          flex-shrink: 0; /* 크기 고정 */
+        }
+        .color-group-stat-item .group-name {
+          flex-grow: 1;
+          font-size: 0.9rem;
+        }
+        .dark-mode .weeks-input-label {
+            color: #e0e0e0; /* 다크모드에서 "주" 라벨 색상 */
+        }
+        .stats-recommend-button-container {
+          text-align: center;
+          margin-top: 1.5rem;
+        }
+        .stats-recommend-button {
+          padding: 0.8rem 1.5rem;
+          font-size: 1.1rem;
+          background-color: #28a745; /* 초록색 계열 버튼 */
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: background-color 0.3s;
+        }
+        .stats-recommend-button:hover {
+          background-color: #218838;
+        }
+        .stats-recommended-numbers-result {
+          /* 기존 .result 스타일과 유사하게 하거나, 필요시 추가 스타일링 */
+          margin-top: 1rem; 
         }
       `}</style>
     </div>
