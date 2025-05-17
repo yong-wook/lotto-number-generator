@@ -197,7 +197,7 @@ export default function Home() {
       const userIncluded = includeNumbers.split(',').map(num => parseInt(num.trim())).filter(num => !isNaN(num));
       
       // 모든 제외 번호 합치기 (API 제공 + 사용자 입력)
-      const allExcluded = [...excludedNumbers, ...userExcluded];
+      const allExcluded = [...(data.excludedNumbers || []), ...userExcluded]; // API 응답의 excludedNumbers 사용 নিশ্চিত
       
       // 최종 번호 생성
       let numbers = [...userIncluded];
@@ -223,7 +223,7 @@ export default function Home() {
       console.log('생성된 번호:', numbers);
 
       setLottoNumbers(numbers);
-      setAnimationKey(prev => prev + 1);
+      setAnimationKey(prev => ((typeof prev === 'string' && prev.startsWith('stats-')) ? parseInt(prev.substring(6), 10) : (typeof prev === 'number' ? prev : 0)) + 1);
       setLastButtonPressed('generate');
       setShowGenerator(false);
 
@@ -260,12 +260,20 @@ export default function Home() {
     const numbersToSave = lottoNumbers.length > 0 ? lottoNumbers : finalNumbers;
     console.log('저장할 번호:', numbersToSave);
     
-    if (savedNumbers.length < 5 && numbersToSave.length > 0) {
+    if (numbersToSave.length === 0) {
+      alert('저장할 번호가 없습니다.');
+      return;
+    }
+
+    if (savedNumbers.length < 5) {
       setSavedNumbers(prev => {
         const newSavedNumbers = [...prev, numbersToSave];
         console.log('새로 저장된 번호:', newSavedNumbers);
         return newSavedNumbers;
       });
+      // 저장 후 생성/추천 번호 영역 초기화
+      setLottoNumbers([]);
+      setFinalNumbers([]);
     } else {
       alert('최대 5개까지 저장할 수 있습니다.');
     }
@@ -309,6 +317,7 @@ export default function Home() {
       console.log("저장할 번호:", finalNumbers);
       
       setFinalNumbers(finalNumbers);
+      setAnimationKey(prev => ((typeof prev === 'string' && prev.startsWith('stats-')) ? parseInt(prev.substring(6), 10) : (typeof prev === 'number' ? prev : 0)) + 1);
 
       // lotto_numbers 테이블에 저장
       const saveResponse = await fetch('/api/save-lotto-numbers', {
