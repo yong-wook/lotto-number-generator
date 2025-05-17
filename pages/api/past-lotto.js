@@ -3,6 +3,12 @@ import { supabaseAdmin } from '../../lib/supabase';
 
 export default async function handler(req, res) {
   const { currentDrawNo } = req.query;
+  const weeksString = req.query.weeks;
+  let weeks = parseInt(weeksString, 10);
+
+  if (isNaN(weeks) || weeks <= 0) {
+    weeks = 4; // weeks 파라미터가 없거나 유효하지 않으면 기본값 4주로 설정
+  }
 
   if (!currentDrawNo) {
     return res.status(400).json({ error: '현재 회차 번호가 제공되지 않았습니다.' });
@@ -13,8 +19,8 @@ export default async function handler(req, res) {
     const { data, error } = await supabaseAdmin
       .from('lottoResults')
       .select('*')
-      .lte('drwNo', currentDrawNo - 1)  // 현재 회차보다 작거나 같은 회차
-      .gte('drwNo', currentDrawNo - 4)  // 현재 회차 - 4보다 크거나 같은 회차
+      .lte('drwNo', currentDrawNo - 1)  // 현재 회차보다 작은 회차 (이전 회차들)
+      .gte('drwNo', currentDrawNo - weeks)  // 현재 회차 - weeks 보다 크거나 같은 회차
       .order('drwNo', { ascending: false });
     
     if (error) {

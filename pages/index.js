@@ -29,6 +29,7 @@ export default function Home() {
   const [showGeneratedHistory, setShowGeneratedHistory] = useState(false);
   const [loadingGeneratedHistory, setLoadingGeneratedHistory] = useState(false);
   const [winningNumbersMap, setWinningNumbersMap] = useState({}); // 당첨 번호 맵 상태 추가
+  const [selectedWeeks, setSelectedWeeks] = useState(4); // 선택된 주 상태 추가 (기본값 4주)
   const numbersRef = useRef(null);
   
   // 마지막으로 눌린 버튼을 추하는 상태 추가
@@ -83,10 +84,12 @@ export default function Home() {
     }
   }, []);
 
-  const fetchPastWinningNumbers = async () => {
+  const fetchPastWinningNumbers = useCallback(async () => {
+    if (!currentDrawNo) return; // currentDrawNo가 없으면 API 호출 방지
     setLoadingPast(true);
     try {
-      const response = await fetch(`/api/past-lotto?currentDrawNo=${currentDrawNo}`);
+      // API 호출 시 selectedWeeks를 파라미터로 추가
+      const response = await fetch(`/api/past-lotto?currentDrawNo=${currentDrawNo}&weeks=${selectedWeeks}`);
       const data = await response.json();
       setPastWinningNumbers(data);
     } catch (error) {
@@ -94,14 +97,14 @@ export default function Home() {
     } finally {
       setLoadingPast(false);
     }
-  };
+  }, [currentDrawNo, selectedWeeks]); // 의존성 배열에 currentDrawNo와 selectedWeeks 추가
 
   const togglePastNumbers = useCallback(() => {
     if (!showPastNumbers) {
-      fetchPastWinningNumbers();
+      fetchPastWinningNumbers(); // 항상 최신 selectedWeeks 기준으로 fetch
     }
     setShowPastNumbers(!showPastNumbers);
-  }, [showPastNumbers,currentDrawNo]);
+  }, [showPastNumbers, currentDrawNo, selectedWeeks, fetchPastWinningNumbers]); // selectedWeeks와 fetchPastWinningNumbers 의존성 추가
 
   // 추천 히스토리 가져오기 함수 추가
   const fetchRecommendHistory = async () => {
@@ -146,6 +149,13 @@ export default function Home() {
   useEffect(() => {
     fetchCurrentLottoNumber();
   }, [fetchCurrentLottoNumber]);
+
+  // selectedWeeks가 변경되고, 과거 번호가 이미 표시된 상태라면 다시 데이터를 가져옵니다.
+  useEffect(() => {
+    if (showPastNumbers) {
+      fetchPastWinningNumbers();
+    }
+  }, [selectedWeeks, showPastNumbers, fetchPastWinningNumbers]); // fetchPastWinningNumbers는 useCallback으로 감싸져 있으므로 의존성에 직접 추가해도 됨
 
   // 페이지 로드 시 현재 주 정보 설정
   useEffect(() => {
@@ -840,9 +850,28 @@ export default function Home() {
             </div>
             
             {recentWinningNumbers && ( // 최근 당첨번호가 있을 때만 버튼 노출
-              <button onClick={togglePastNumbers} className="past-numbers-button">
-                {showPastNumbers ? '지난 당첨번호 숨기기' : '지난 4주간 당첨번호 조회'}
-              </button>
+              <div className="past-numbers-controls">
+                <input
+                  type="number"
+                  value={selectedWeeks}
+                  onChange={(e) => {
+                    let value = parseInt(e.target.value, 10);
+                    if (isNaN(value) || value < 1) {
+                      value = 1;
+                    } else if (value > 20) {
+                      value = 20;
+                    }
+                    setSelectedWeeks(value);
+                  }}
+                  min="1"
+                  max="20"
+                  className="weeks-input" // CSS 클래스 변경 또는 신규 적용
+                />
+                <span className="weeks-input-label">주</span>
+                <button onClick={togglePastNumbers} className="past-numbers-button">
+                  {showPastNumbers ? '지난 당첨번호 숨기기' : `지난 ${selectedWeeks}주간 당첨번호 조회`}
+                </button>
+              </div>
             )}
             
             {loadingPast ? (
@@ -1183,6 +1212,38 @@ export default function Home() {
 
         .past-numbers-button:hover {
           background-color: #45a049; /* 호버 시 색상 변경 */
+        }
+
+        .past-numbers-controls {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          margin-top: 1rem;
+        }
+
+        .weeks-dropdown {
+          padding: 0.5rem;
+          font-size: 1rem;
+          border-radius: 5px;
+          border: 1px solid #ccc;
+        }
+
+        .weeks-input {
+          padding: 0.5rem;
+          font-size: 1rem;
+          border-radius: 5px;
+          border: 1px solid #ccc;
+          width: 60px; /* 입력 필드 너비 조절 */
+          text-align: center;
+          background-color: #4A4A4A; /* 진한 회색 배경 */
+          color: #FFFFFF; /* 선명한 하얀색 글씨 */
+          border: 1px solid #555555; /* 테두리 색상 조정 */
+          font-weight: bold; /* 글씨 볼드 처리 */
+        }
+
+        .weeks-input-label {
+          font-size: 1rem;
+          margin-left: 0.25rem; /* 입력 필드와 "주" 사이 간격 */
         }
 
         @media (max-width: 768px) {
